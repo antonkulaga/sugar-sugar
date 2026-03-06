@@ -72,11 +72,7 @@ class ConsentFormPage(html.Div):
                                             color="secondary",
                                             outline=True,
                                             style={"fontWeight": "800", "marginBottom": "14px"},
-                                        ),
-                                        html.Div(
-                                            t("ui.consent_form.footer_note", locale=locale),
-                                            style={"color": "#64748b", "fontSize": "14px"},
-                                        ),
+                                        )
                                     ]
                                 ),
                             )

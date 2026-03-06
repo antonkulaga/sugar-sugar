@@ -52,6 +52,7 @@ from sugar_sugar.components.consent_form import ConsentFormPage
 from sugar_sugar.components.submit import SubmitComponent
 from sugar_sugar.components.header import HeaderComponent
 from sugar_sugar.components.ending import EndingPage
+from sugar_sugar.components.navbar import NavBar, get_navbar_back_href
 
 # Type aliases for clarity
 TableData = List[Dict[str, str]]  # Format for the predictions table data
@@ -191,6 +192,10 @@ app.layout = html.Div([
     # Present on every page so scroll callback always has a target.
     html.Div(id='scroll-to-top-trigger', style={'display': 'none'}),
 
+    # Navigation bar (top of page)
+    html.Div(id='navbar-container', children=[]),
+    
+    # Main content area
     html.Div(id='page-content', children=[])  # Will be populated in main()
 ])
 
@@ -291,7 +296,8 @@ def update_prediction_uploaded_data_consent_ui(
 
 @app.callback(
     [Output('page-content', 'children'),
-     Output('mobile-warning', 'children')],
+     Output('mobile-warning', 'children'),
+     Output('navbar-container', 'children')],
     [Input('url', 'pathname'),
      Input('interface-language', 'data')],
     [State('user-info-store', 'data'),
@@ -311,17 +317,19 @@ def display_page(
     events_df_data: Optional[Dict],
     glucose_unit: Optional[str],
     user_agent: Optional[str],
-) -> tuple[html.Div, Optional[html.Div]]:
+) -> tuple[html.Div, Optional[html.Div], html.Div]:
     locale = normalize_locale(interface_language)
+    navbar = NavBar(locale=locale, current_page=pathname or "/")
+    
     with start_action(action_type=u"display_page", pathname=pathname, locale=locale):
         warning_content = render_mobile_warning(user_agent, locale=locale)
         if pathname == "/consent-form":
-            return ConsentFormPage(locale=locale), warning_content
+            return ConsentFormPage(locale=locale), warning_content, navbar
         if pathname == '/prediction' and user_info:
             format_value = str(user_info.get("format") or "A")
-            return create_prediction_layout(locale=locale, format_value=format_value, user_info=user_info), warning_content
+            return create_prediction_layout(locale=locale, format_value=format_value, user_info=user_info), warning_content, navbar
         if pathname == '/startup':
-            return (StartupPage(locale=locale), warning_content)
+            return (StartupPage(locale=locale), warning_content, navbar)
         if pathname == '/ending':
             # Check if we have the required data for ending page
             if not full_df_data or not user_info or 'prediction_table_data' not in user_info:
@@ -342,8 +350,8 @@ def display_page(
                             }
                         )
                     ], style={'textAlign': 'center'})
-                ]), warning_content
-            return create_ending_layout(full_df_data, current_df_data, events_df_data, user_info, glucose_unit, locale=locale), warning_content
+                ]), warning_content, navbar
+            return create_ending_layout(full_df_data, current_df_data, events_df_data, user_info, glucose_unit, locale=locale), warning_content, navbar
         if pathname == '/final':
             if not user_info:
                 return html.Div([
@@ -363,10 +371,22 @@ def display_page(
                             }
                         )
                     ], style={'textAlign': 'center'})
-                ]), warning_content
-            return create_final_layout(full_df_data, user_info, glucose_unit, locale=locale), warning_content
+                ]), warning_content, navbar
+            return create_final_layout(full_df_data, user_info, glucose_unit, locale=locale), warning_content, navbar
         # Default route: landing page
-        return (LandingPage(locale=locale), warning_content)
+        return (LandingPage(locale=locale), warning_content, navbar)
+
+@app.callback(
+    Output('url', 'pathname', allow_duplicate=True),
+    Input('navbar-back-link', 'href'),
+    State('url', 'pathname'),
+    prevent_initial_call=True
+)
+def handle_back_button(back_href: str, current_pathname: Optional[str]) -> str:
+    """Handle the back button navigation."""
+    if back_href and back_href != "#":
+        return get_navbar_back_href(current_pathname)
+    return no_update
 
 def create_prediction_layout(*, locale: str, format_value: str, user_info: Dict[str, Any]) -> html.Div:
     """Create the prediction page layout"""

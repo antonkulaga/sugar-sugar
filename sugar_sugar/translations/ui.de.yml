@@ -7,6 +7,7 @@ de:
     loading: "Lädt..."
     continue: "Weiter"
     back: "Zurück"
+    home: "Startseite"
     finish_exit: "Beenden / Verlassen"
 
   language:
@@ -33,6 +34,7 @@ de:
     consent_receive_results: "Ich möchte meine Ergebnisse später erhalten"
     consent_keep_updated: "Haltet mich über Projekt‑Updates auf dem Laufenden"
     consent_acknowledge_label: "Ich bin mindestens 18 Jahre alt und habe das Einwilligungsformular gelesen."
+    consent_gdpr_label: "Ich stimme der Verarbeitung meiner personenbezogenen Daten zu den im Einwilligungshinweis angegebenen Zwecken gemäß der Datenschutz-Grundverordnung (EU) 2016/679 zu. Ich verstehe, dass meine Daten sicher verarbeitet werden, nicht an unbefugte Dritte weitergegeben werden und dass ich meine Einwilligung jederzeit widerrufen kann."
     open_consent_form: "Einwilligungsformular öffnen"
     consent_required_error: "Bitte bestätige, dass du 18+ bist und das Einwilligungsformular gelesen hast, um fortzufahren."
     next_hint: "Als Nächstes: kurzes Formular ausfüllen und dann CGM‑Daten hochladen (oder Beispieldaten verwenden)."
@@ -91,12 +93,12 @@ de:
     start_prediction: "Vorhersage starten"
     format_label: "Format"
     format_placeholder: "Option auswählen"
-    format_a_label: "A = generische Daten verwenden"
-    format_b_label: "B = eigene Daten verwenden"
-    format_c_label: "C = generische und eigene Daten verwenden"
-    format_help_a: "A — generische Daten (keine Sensordaten nötig). 12 Runden mit einem Beispieldatensatz."
-    format_help_b: "B — eigene Daten. Lade eine eigene Datei hoch und prognostiziere nur darauf."
-    format_help_c: "C — beides ausprobieren. Du lädst eine eigene Datei hoch, aber pro Runde werden entweder Beispiel‑ oder eigene Daten genutzt."
+    format_a_label: "generische Daten"
+    format_b_label: "Meine Daten"
+    format_c_label: "Generische + meine Daten"
+    format_help_a: "Beispieldaten — generische Daten (keine Sensordaten nötig). 12 Runden mit einem Beispieldatensatz."
+    format_help_b: "Meine Daten — eigene Daten. Lade eine eigene Datei hoch und prognostiziere nur darauf."
+    format_help_c: "Generische + meine Daten — beides ausprobieren. Du lädst eine eigene Datei hoch, aber pro Runde werden entweder generische oder deine eigenen Daten genutzt."
     data_usage_consent_label: "Ich stimme der Nutzung meiner hochgeladenen CGM‑Daten für diese Studie zu."
     data_usage_consent_required: "Bitte bestätige die Einwilligung zur Datennutzung, um fortzufahren."
 
@@ -191,9 +193,9 @@ de:
 
   switch_format:
     title: "Andere Option ausprobieren"
-    try_a: "A ausprobieren = generische Daten verwenden"
-    try_b: "B ausprobieren = eigene Daten verwenden"
-    try_c: "C ausprobieren = generische und eigene Daten verwenden"
+    try_a: "Beispieldaten ausprobieren = generische Daten verwenden"
+    try_b: "Meine Daten ausprobieren = eigene Daten verwenden"
+    try_c: "Beispiel + meine Daten ausprobieren = generische und eigene Daten verwenden"
     not_eligible_no_cgm: "B/C sind nur verfügbar, wenn du angegeben hast, dass du CGM‑Daten hast."
 
   results_disclaimer:

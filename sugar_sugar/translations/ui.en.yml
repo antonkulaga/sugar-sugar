@@ -7,6 +7,7 @@ en:
     loading: "Loading..."
     continue: "Continue"
     back: "Back"
+    home: "Home"
     finish_exit: "Finish / Exit"
 
   language:
@@ -33,13 +34,14 @@ en:
     consent_receive_results: "I want to receive my results later"
     consent_keep_updated: "Keep me up to date about project updates"
     consent_acknowledge_label: "I am 18+ years old and I have read the consent form."
-    open_consent_form: "Open consent form"
+    consent_gdpr_label: "I consent to the processing of my personal data, for the purposes stated in the consent notice, in accordance with the General Data Protection Regulation (EU) 2016/679. I understand that my data will be handled securely, will not be shared with unauthorized third parties, and that I may withdraw my consent at any time."
+    open_consent_form: "Open consent notice"
     consent_required_error: "Please confirm you are 18+ and have read the consent form to continue."
     next_hint: "Next: you'll fill in a short form, then upload CGM data (or use the sample dataset)."
 
   consent_form:
-    title: "Consent form"
-    subtitle: "Please read this information before you continue. This is a basic consent form and will be updated."
+    title: "Consent notice"
+    subtitle: "Please read this information before you continue. This is a basic consent notice and will be updated."
     adults_only: "You must be 18+ years old to participate in this study."
     summary_title: "Summary"
     summary_bullets:
@@ -54,7 +56,6 @@ en:
       - "We will only use the data according to your selections on the startup page."
     withdraw_title: "Withdrawal"
     withdraw_text: "You can stop participating at any time by closing the browser tab/window. If you want your data removed, please contact the study organizers."
-    footer_note: "After reading, return to the app and continue on the startup page."
 
   startup:
     fork_me: "Fork me on GitHub"
@@ -91,12 +92,12 @@ en:
     start_prediction: "Start Prediction"
     format_label: "Format"
     format_placeholder: "Choose an option"
-    format_a_label: "A = use generic data"
-    format_b_label: "B = use own data"
-    format_c_label: "C = use both generic and own data"
-    format_help_a: "A — use generic data (no sensor data required). 12 rounds using a sample set."
-    format_help_b: "B — use your own data. Upload your own file and predict only on it."
-    format_help_c: "C — try both. You will upload your own file, but each round uses either sample data or your own data."
+    format_a_label: "Generic Data"
+    format_b_label: "My Data"
+    format_c_label: "Generic + My Data"
+    format_help_a: "Generic Data — use generic data (no sensor data required). 12 rounds using a sample set."
+    format_help_b: "My Data — use your own data. Upload your own file and predict only on it."
+    format_help_c: "Generic + My Data — try both. You will upload your own file, but each round uses either sample data or your own data."
     data_usage_consent_label: "I agree to the use of my uploaded CGM data for this study."
     data_usage_consent_required: "Please confirm data usage consent to continue."
 
@@ -105,11 +106,11 @@ en:
     time_window_label: "Time Window Position:"
     upload_prompt_1: "Drag and Drop or "
     upload_prompt_2: "Upload Your Data Here"
-    use_example_data: "Use Example Data"
+    use_example_data: "Use Generic Data"
     upload_required: "Upload required"
     upload_success: "Successfully loaded data from %{filename}. This data will be used for predictions."
-    example_data_now_using: "Now using example data. Upload a CSV file for personalized analysis."
-    example_data_warning: "Currently using example data. Upload your own Dexcom/Libre/Medtronic CSV file for personalized analysis."
+    example_data_now_using: "Now using generic data. Upload a CSV file for personalized analysis."
+    example_data_warning: "Currently using generic data. Upload your own Dexcom/Libre/Medtronic CSV file for personalized analysis."
     current_data_source: "Current Data Source:"
     description_1: "Test your glucose prediction skills!"
     description_2: "Click on the graph or draw lines to predict future glucose values."
@@ -191,9 +192,9 @@ en:
 
   switch_format:
     title: "Try another option"
-    try_a: "Try A = use generic data"
-    try_b: "Try B = use own data"
-    try_c: "Try C = use both generic and own data"
+    try_a: "Try Example Data = use generic data"
+    try_b: "Try My Data = use own data"
+    try_c: "Try Example + My Data = use both generic and own data"
     not_eligible_no_cgm: "B/C are only available if you said you have CGM data."
 
   results_disclaimer:

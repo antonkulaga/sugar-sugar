@@ -560,8 +560,8 @@ class SubmitComponent(html.Div):
             }
             
             if not df_data:
-                # No data, keep disabled with gray style
-                disabled_style = {**base_style, 'backgroundColor': '#cccccc', 'color': '#666666', 'cursor': 'not-allowed'}
+                # No data, keep disabled with darker grey style
+                disabled_style = {**base_style, 'backgroundColor': '#555555', 'color': 'white', 'cursor': 'not-allowed'}
                 label_style = {**base_label_style, 'color': '#6c757d'}
                 return True, disabled_style, t("ui.submit.progress_no_data", locale=locale), label_style
             
@@ -607,8 +607,8 @@ class SubmitComponent(html.Div):
                 
                 if predictions_to_end:
                     # Enable button - predictions reach the end
-                    enabled_style = {**base_style, 'backgroundColor': '#28a745', 'color': 'white', 'cursor': 'pointer'}
-                    label_style = {**base_label_style, 'color': '#28a745', 'fontWeight': 'bold'}
+                    enabled_style = {**base_style, 'backgroundColor': '#1e88e5', 'color': 'white', 'cursor': 'pointer'}
+                    label_style = {**base_label_style, 'color': '#1e88e5', 'fontWeight': 'bold'}
                     return False, enabled_style, t("ui.submit.progress_ready", locale=locale), label_style
                 else:
                     # Some predictions but not to the end
@@ -623,7 +623,7 @@ class SubmitComponent(html.Div):
                     return True, disabled_style, status_text, label_style
             else:
                 # No predictions in hidden area
-                disabled_style = {**base_style, 'backgroundColor': '#cccccc', 'color': '#666666', 'cursor': 'not-allowed'}
+                disabled_style = {**base_style, 'backgroundColor': '#555555', 'color': 'white', 'cursor': 'not-allowed'}
                 label_style = {**base_label_style, 'color': '#6c757d'}
                 return True, disabled_style, t("ui.submit.progress_hidden_area", locale=locale), label_style
 

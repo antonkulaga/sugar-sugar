@@ -6,6 +6,48 @@ from typing import Any, Optional
 # DEBUG_MODE will be imported dynamically to get the latest value
 from sugar_sugar.i18n import t
 
+
+
+def _compute_format_options(
+    uses_cgm: Optional[bool],
+    interface_language: Optional[str],
+    current_format: Optional[str],
+) -> tuple[list[dict[str, Any]], Optional[str]]:
+    """Return the dropdown options list and the desired selected value.
+
+    Keeping the option ordering consistent (A, B, C) is important for the
+dropdown scroller.  Formats B and C are disabled unless ``uses_cgm`` is True.
+    The returned ``value`` is used to update the component's value according to
+eligibility and previous selection.
+    """
+    allow_all = uses_cgm is True
+    options: list[dict[str, Any]] = [
+        {
+            'label': t("ui.startup.format_a_label", locale=interface_language),
+            'value': 'A',
+        },
+        {
+            'label': t("ui.startup.format_b_label", locale=interface_language),
+            'value': 'B',
+            'disabled': not allow_all,
+        },
+        {
+            'label': t("ui.startup.format_c_label", locale=interface_language),
+            'value': 'C',
+            'disabled': not allow_all,
+        },
+    ]
+
+    if not current_format:
+        return options, ('C' if allow_all else 'A')
+    if allow_all and current_format == 'A':
+        # Encourage option C once eligible.
+        return options, 'C'
+    if not allow_all and current_format in ('B', 'C'):
+        return options, 'A'
+    return options, current_format
+
+
 class StartupPage(html.Div):
     def __init__(self, *, locale: str = "en") -> None:
         self.component_id: str = 'startup-page'
@@ -37,8 +79,8 @@ class StartupPage(html.Div):
                     ]),
                     
                     html.Div([
-                        html.Label(t("ui.startup.email_label", locale=locale), style={'fontSize': '24px', 'marginBottom': '10px', 'color': '#333', 'display': 'inline-block'}),
-                        html.Span(id='email-required', children=' *', style={'color': '#d32f2f', 'fontSize': '24px', 'fontWeight': 'bold'})
+                        html.Label(t("ui.startup.email_label", locale=locale), style={'fontSize': '22px', 'fontWeight': '800', 'marginBottom': '10px', 'color': '#0f172a', 'display': 'inline-block'}),
+                        html.Span(id='email-required', children=' *', style={'color': '#d32f2f', 'fontSize': '22px', 'fontWeight': 'bold'})
                     ], style={'marginBottom': '10px'}),
                     dcc.Input(
                         id='email-input',
@@ -48,8 +90,8 @@ class StartupPage(html.Div):
                     ),
                     
                     html.Div([
-                        html.Label(t("ui.startup.age_label", locale=locale), style={'fontSize': '24px', 'marginBottom': '10px', 'color': '#333', 'display': 'inline-block'}),
-                        html.Span(id='age-required', children=' *', style={'color': '#d32f2f', 'fontSize': '24px', 'fontWeight': 'bold'})
+                        html.Label(t("ui.startup.age_label", locale=locale), style={'fontSize': '22px', 'fontWeight': '800', 'marginBottom': '10px', 'color': '#0f172a', 'display': 'inline-block'}),
+                        html.Span(id='age-required', children=' *', style={'color': '#d32f2f', 'fontSize': '22px', 'fontWeight': 'bold'})
                     ], style={'marginBottom': '10px'}),
                     dcc.Input(
                         id='age-input',
@@ -66,8 +108,8 @@ class StartupPage(html.Div):
                     ),
                     
                     html.Div([
-                        html.Label(t("ui.startup.gender_label", locale=locale), style={'fontSize': '24px', 'marginBottom': '10px', 'color': '#333', 'display': 'inline-block'}),
-                        html.Span(id='gender-required', children=' *', style={'color': '#d32f2f', 'fontSize': '24px', 'fontWeight': 'bold'})
+                        html.Label(t("ui.startup.gender_label", locale=locale), style={'fontSize': '22px', 'fontWeight': '800', 'marginBottom': '10px', 'color': '#0f172a', 'display': 'inline-block'}),
+                        html.Span(id='gender-required', children=' *', style={'color': '#d32f2f', 'fontSize': '22px', 'fontWeight': 'bold'})
                     ], style={'marginBottom': '10px'}),
                     dcc.Dropdown(
                         id='gender-dropdown',
@@ -80,7 +122,7 @@ class StartupPage(html.Div):
                         style={'fontSize': '20px', 'marginBottom': '20px'}
                     ),
 
-                    html.Label(t("ui.startup.cgm_label", locale=locale), style={'fontSize': '24px', 'marginBottom': '10px', 'color': '#333'}),
+                    html.Label(t("ui.startup.cgm_label", locale=locale), style={'fontSize': '22px', 'fontWeight': '800', 'marginBottom': '10px', 'color': '#0f172a'}),
                     dcc.Dropdown(
                         id='cgm-dropdown',
                         options=[
@@ -92,7 +134,7 @@ class StartupPage(html.Div):
                     ),
 
                     html.Div(id='cgm-details', children=[
-                        html.Label(t("ui.startup.cgm_duration_label", locale=locale), style={'fontSize': '24px', 'marginBottom': '10px', 'color': '#333'}),
+                        html.Label(t("ui.startup.cgm_duration_label", locale=locale), style={'fontSize': '22px', 'fontWeight': '800', 'marginBottom': '10px', 'color': '#0f172a'}),
                         dcc.Input(
                             id='cgm-duration-input',
                             type='number',
@@ -105,15 +147,15 @@ class StartupPage(html.Div):
 
                     html.Div([
                         html.Div([
-                            html.Label(t("ui.startup.format_label", locale=locale), style={'fontSize': '24px', 'marginBottom': '10px', 'color': '#333', 'display': 'inline-block'}),
-                            html.Span(id='format-required', children=' *', style={'color': '#d32f2f', 'fontSize': '24px', 'fontWeight': 'bold'})
+                            html.Label(t("ui.startup.format_label", locale=locale), style={'fontSize': '22px', 'fontWeight': '800', 'marginBottom': '10px', 'color': '#0f172a', 'display': 'inline-block'}),
+                            html.Span(id='format-required', children=' *', style={'color': '#d32f2f', 'fontSize': '22px', 'fontWeight': 'bold'})
                         ], style={'marginBottom': '10px'}),
                         dcc.Dropdown(
                             id='format-dropdown',
                             options=[
-                                {'label': t("ui.startup.format_c_label", locale=locale), 'value': 'C', 'disabled': True},
-                                {'label': t("ui.startup.format_b_label", locale=locale), 'value': 'B', 'disabled': True},
                                 {'label': t("ui.startup.format_a_label", locale=locale), 'value': 'A'},
+                                {'label': t("ui.startup.format_b_label", locale=locale), 'value': 'B', 'disabled': True},
+                                {'label': t("ui.startup.format_c_label", locale=locale), 'value': 'C', 'disabled': True},
                             ],
                             placeholder=t("ui.startup.format_placeholder", locale=locale),
                             style={'fontSize': '20px', 'marginBottom': '10px'}
@@ -144,8 +186,8 @@ class StartupPage(html.Div):
                     ], style={'marginBottom': '10px'}),
                     
                     html.Div([
-                        html.Label(t("ui.startup.diabetic_label", locale=locale), style={'fontSize': '24px', 'marginBottom': '10px', 'color': '#333', 'display': 'inline-block'}),
-                        html.Span(id='diabetic-required', children=' *', style={'color': '#d32f2f', 'fontSize': '24px', 'fontWeight': 'bold'})
+                        html.Label(t("ui.startup.diabetic_label", locale=locale), style={'fontSize': '22px', 'fontWeight': '800', 'marginBottom': '10px', 'color': '#0f172a', 'display': 'inline-block'}),
+                        html.Span(id='diabetic-required', children=' *', style={'color': '#d32f2f', 'fontSize': '22px', 'fontWeight': 'bold'})
                     ], style={'marginBottom': '10px'}),
                     dcc.Dropdown(
                         id='diabetic-dropdown',
@@ -159,8 +201,8 @@ class StartupPage(html.Div):
                     
                     html.Div(id='diabetic-details', children=[
                         html.Div([
-                            html.Label(t("ui.startup.diabetes_type_label", locale=locale), style={'fontSize': '24px', 'marginBottom': '10px', 'color': '#333', 'display': 'inline-block'}),
-                            html.Span(id='diabetic-type-required', children=' *', style={'color': '#d32f2f', 'fontSize': '24px', 'fontWeight': 'bold'})
+                            html.Label(t("ui.startup.diabetes_type_label", locale=locale), style={'fontSize': '22px', 'fontWeight': '800', 'marginBottom': '10px', 'color': '#0f172a', 'display': 'inline-block'}),
+                            html.Span(id='diabetic-type-required', children=' *', style={'color': '#d32f2f', 'fontSize': '22px', 'fontWeight': 'bold'})
                         ], style={'marginBottom': '10px'}),
                         dcc.Dropdown(
                             id='diabetic-type-dropdown',
@@ -174,8 +216,8 @@ class StartupPage(html.Div):
                         ),
                         
                         html.Div([
-                            html.Label(t("ui.startup.diabetes_duration_label", locale=locale), style={'fontSize': '24px', 'marginBottom': '10px', 'color': '#333', 'display': 'inline-block'}),
-                            html.Span(id='diabetes-duration-required', children=' *', style={'color': '#d32f2f', 'fontSize': '24px', 'fontWeight': 'bold'})
+                            html.Label(t("ui.startup.diabetes_duration_label", locale=locale), style={'fontSize': '22px', 'fontWeight': '800', 'marginBottom': '10px', 'color': '#0f172a', 'display': 'inline-block'}),
+                            html.Span(id='diabetes-duration-required', children=' *', style={'color': '#d32f2f', 'fontSize': '22px', 'fontWeight': 'bold'})
                         ], style={'marginBottom': '10px'}),
                         dcc.Input(
                             id='diabetes-duration-input',
@@ -188,8 +230,8 @@ class StartupPage(html.Div):
                     ]),
                     
                     html.Div([
-                        html.Label(t("ui.startup.location_label", locale=locale), style={'fontSize': '24px', 'marginBottom': '10px', 'color': '#333', 'display': 'inline-block'}),
-                        html.Span(id='location-required', children=' *', style={'color': '#d32f2f', 'fontSize': '24px', 'fontWeight': 'bold'})
+                        html.Label(t("ui.startup.location_label", locale=locale), style={'fontSize': '22px', 'fontWeight': '800', 'marginBottom': '10px', 'color': '#0f172a', 'display': 'inline-block'}),
+                        html.Span(id='location-required', children=' *', style={'color': '#d32f2f', 'fontSize': '22px', 'fontWeight': 'bold'})
                     ], style={'marginBottom': '10px'}),
                     dcc.Input(
                         id='location-input',
@@ -200,7 +242,6 @@ class StartupPage(html.Div):
                     
                     html.Div(
                         [
-                            html.Hr(style={'margin': '30px 0', 'border': '1px solid #ddd'}),
                             html.H3(
                                 t("ui.startup.contact_prefs_title", locale=locale),
                                 style={'fontSize': '24px', 'marginBottom': '12px', 'color': '#2c5282'}
@@ -304,21 +345,8 @@ class StartupPage(html.Div):
             interface_language: Optional[str],
             current_format: Optional[str],
         ) -> tuple[list[dict[str, Any]], Optional[str]]:
-            allow_all = uses_cgm is True
-            options: list[dict[str, Any]] = [
-                {'label': t("ui.startup.format_c_label", locale=interface_language), 'value': 'C', 'disabled': not allow_all},
-                {'label': t("ui.startup.format_b_label", locale=interface_language), 'value': 'B', 'disabled': not allow_all},
-                {'label': t("ui.startup.format_a_label", locale=interface_language), 'value': 'A'},
-            ]
-
-            if not current_format:
-                return options, ('C' if allow_all else 'A')
-            if allow_all and current_format == 'A':
-                # Encourage option C once eligible.
-                return options, 'C'
-            if not allow_all and current_format in ('B', 'C'):
-                return options, 'A'
-            return options, current_format
+            # delegate to helper so we can unit-test behaviour independently
+            return _compute_format_options(uses_cgm, interface_language, current_format)
 
         @app.callback(
             [Output('data-usage-consent-container', 'style'),
@@ -469,7 +497,7 @@ class StartupPage(html.Div):
             # Enable button only if all required fields are filled
             if all_required_filled:
                 button_style = {
-                    'backgroundColor': '#4CAF50',
+                    'backgroundColor': '#1e88e5',
                     'color': 'white',
                     'padding': '20px 30px',
                     'border': 'none',
@@ -499,7 +527,7 @@ class StartupPage(html.Div):
                 )
             else:
                 button_style = {
-                    'backgroundColor': '#cccccc',
+                    'backgroundColor': '#555555',
                     'color': 'white',
                     'padding': '20px 30px',
                     'border': 'none',

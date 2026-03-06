@@ -105,13 +105,9 @@ class LandingPage(html.Div):
                         ),
                         html.Div(
                             [
-                                html.Div(
+                                html.H3(
                                     t("ui.landing.how_it_works", locale=locale),
-                                    style={
-                                        "fontWeight": "700",
-                                        "marginBottom": "8px",
-                                        "color": "#0f172a",
-                                    },
+                                    style={"fontSize": "22px", "fontWeight": "800", "color": "#1565c0", "marginBottom": "8px"},
                                 ),
                                 html.Ul(
                                     [html.Li(item) for item in t_list("ui.landing.how_it_works_steps", locale=locale)],
@@ -183,7 +179,7 @@ class LandingPage(html.Div):
                 [
                     html.H3(
                         t("ui.landing.about_study_title", locale=locale),
-                        style={"fontSize": "22px", "fontWeight": "800", "color": "#0f172a"},
+                        style={"fontSize": "22px", "fontWeight": "800", "color": "#1565c0"},
                     ),
                     html.Div(
                         t("ui.landing.about_study_text", locale=locale),
@@ -194,12 +190,57 @@ class LandingPage(html.Div):
             style={"borderRadius": "14px", "border": "1px solid rgba(15, 23, 42, 0.10)"},
         )
 
+        consent_notice_card = dbc.Card(
+            dbc.CardBody(
+                [
+                    html.H3(
+                        t("ui.consent_form.title", locale=locale),
+                        style={"fontSize": "22px", "fontWeight": "800", "color": "#1565c0"},
+                    ),
+                    html.Div(
+                        t("ui.consent_form.subtitle", locale=locale),
+                        style={"color": "#334155", "lineHeight": "1.6", "marginBottom": "12px"},
+                    ),
+                    dbc.Alert(
+                        t("ui.consent_form.adults_only", locale=locale),
+                        color="warning",
+                        style={"marginBottom": "14px"},
+                    ),
+                    html.H4(
+                        t("ui.consent_form.summary_title", locale=locale),
+                        style={"fontSize": "20px", "fontWeight": "800", "color": "#0f172a"},
+                    ),
+                    html.Ul(
+                        [html.Li(item) for item in t_list("ui.consent_form.summary_bullets", locale=locale)],
+                        style={"color": "#334155", "lineHeight": "1.6"},
+                    ),
+                    html.H4(
+                        t("ui.consent_form.data_title", locale=locale),
+                        style={"fontSize": "20px", "fontWeight": "800", "color": "#0f172a"},
+                    ),
+                    html.Ul(
+                        [html.Li(item) for item in t_list("ui.consent_form.data_bullets", locale=locale)],
+                        style={"color": "#334155", "lineHeight": "1.6"},
+                    ),
+                    html.H4(
+                        t("ui.consent_form.withdraw_title", locale=locale),
+                        style={"fontSize": "20px", "fontWeight": "800", "color": "#0f172a"},
+                    ),
+                    html.Div(
+                        t("ui.consent_form.withdraw_text", locale=locale),
+                        style={"color": "#334155", "lineHeight": "1.6"},
+                    )
+                ]
+            ),
+            style={"borderRadius": "14px", "border": "1px solid rgba(15, 23, 42, 0.10)"},
+        )
+
         consent_card = dbc.Card(
             dbc.CardBody(
                 [
                     html.H3(
                         t("ui.landing.your_choices_title", locale=locale),
-                        style={"fontSize": "22px", "fontWeight": "800", "color": "#0f172a"},
+                        style={"fontSize": "22px", "fontWeight": "800", "color": "#1565c0"},
                     ),
                     html.Div(
                         t("ui.landing.your_choices_text", locale=locale),
@@ -207,15 +248,6 @@ class LandingPage(html.Div):
                     ),
                     html.Div(
                         [
-                            dbc.Button(
-                                t("ui.landing.open_consent_form", locale=locale),
-                                href="/consent-form",
-                                target="_blank",
-                                rel="noopener noreferrer",
-                                color="secondary",
-                                outline=True,
-                                style={"marginBottom": "10px", "fontWeight": "700"},
-                            ),
                             dbc.Checklist(
                                 id="consent-acknowledge",
                                 options=[
@@ -229,6 +261,17 @@ class LandingPage(html.Div):
                             ),
                         ],
                         style={"marginBottom": "10px"},
+                    ),
+                    dbc.Checklist(
+                        id="consent-gdpr",
+                        options=[
+                            {
+                                "label": f" {t('ui.landing.consent_gdpr_label', locale=locale)}",
+                                "value": "gdpr",
+                            }
+                        ],
+                        value=[],
+                        style={"fontSize": "16px", "marginBottom": "10px"},
                     ),
                     dbc.Checklist(
                         id="consent-play-only",
@@ -261,7 +304,15 @@ class LandingPage(html.Div):
                         t("ui.common.continue", locale=locale),
                         id="landing-continue",
                         color="primary",
-                        style={"marginTop": "14px", "width": "220px", "fontWeight": "700"},
+                        disabled=True,
+                        style={
+                            "marginTop": "14px",
+                            "width": "220px",
+                            "fontWeight": "700",
+                            "backgroundColor": "#cccccc",
+                            "color": "white",
+                            "cursor": "not-allowed",
+                        },
                     ),
                     html.Div(
                         t("ui.landing.next_hint", locale=locale),
@@ -279,7 +330,14 @@ class LandingPage(html.Div):
                 html.Div(style={"height": "18px"}),
                 dbc.Row(
                     [
-                        dbc.Col(study_info, md=6),
+                        dbc.Col(
+                            [
+                                study_info,
+                                html.Div(style={"height": "18px"}),
+                                consent_notice_card,
+                            ],
+                            md=6,
+                        ),
                         dbc.Col(consent_card, md=6),
                     ],
                     className="g-4",
@@ -304,6 +362,38 @@ class LandingPage(html.Div):
         )
 
     def register_callbacks(self, app: dash.Dash) -> None:
+        # update continue button based on mandatory consents
+        @app.callback(
+            [
+                Output("landing-continue", "disabled"),
+                Output("landing-continue", "style"),
+            ],
+            [
+                Input("consent-acknowledge", "value"),
+                Input("consent-gdpr", "value"),
+            ],
+        )
+        def update_continue_button(
+            acknowledge_value: Optional[list[str]],
+            gdpr_value: Optional[list[str]],
+        ) -> tuple[bool, dict[str, Any]]:
+            acknowledged = bool(acknowledge_value and "ack" in acknowledge_value)
+            gdpr_consented = bool(gdpr_value and "gdpr" in gdpr_value)
+
+            base_style = {"marginTop": "14px", "width": "220px", "fontWeight": "700", "backgroundColor": "#1e88e5", "color": "white"}
+            if acknowledged and gdpr_consented:
+                # blue button when enabled
+                return False, base_style
+            else:
+                # darker grey when disabled
+                disabled_style = base_style.copy()
+                disabled_style.update({
+                    "backgroundColor": "#555555",
+                    "color": "white",
+                    "cursor": "not-allowed",
+                })
+                return True, disabled_style
+
         @app.callback(
             [
                 Output("url", "pathname", allow_duplicate=True),
@@ -313,6 +403,7 @@ class LandingPage(html.Div):
             [Input("landing-continue", "n_clicks")],
             [
                 State("consent-acknowledge", "value"),
+                State("consent-gdpr", "value"),
                 State("consent-play-only", "value"),
                 State("consent-receive-results", "value"),
                 State("consent-keep-updated", "value"),
@@ -324,6 +415,7 @@ class LandingPage(html.Div):
         def handle_landing_continue(
             n_clicks: Optional[int],
             acknowledge_value: Optional[list[str]],
+            gdpr_value: Optional[list[str]],
             play_only_value: Optional[list[str]],
             receive_results_value: Optional[list[str]],
             keep_updated_value: Optional[list[str]],
@@ -334,7 +426,8 @@ class LandingPage(html.Div):
                 return no_update, no_update, no_update
 
             acknowledged = bool(acknowledge_value and "ack" in acknowledge_value)
-            if not acknowledged:
+            gdpr_consented = bool(gdpr_value and "gdpr" in gdpr_value)
+            if not acknowledged or not gdpr_consented:
                 return (
                     no_update,
                     no_update,
@@ -355,6 +448,7 @@ class LandingPage(html.Div):
             receive_results = bool(receive_results_value and "receive_results" in receive_results_value)
             keep_updated = bool(keep_updated_value and "keep_updated" in keep_updated_value)
 
+            info["consent_gdpr"] = gdpr_consented
             info["consent_play_only"] = play_only
             # If user didn't select anything, record that they did not consent to participate.
             info["consent_participate_in_study"] = (not play_only) and (not no_selection)
@@ -371,6 +465,7 @@ class LandingPage(html.Div):
                     "study_id": info["study_id"],
                     "number": info.get("number", ""),
                     "timestamp": info["consent_timestamp"],
+                    "gdpr_consent": gdpr_consented,
                     "play_only": play_only,
                     "participate_in_study": info["consent_participate_in_study"],
                     "receive_results_later": receive_results,
