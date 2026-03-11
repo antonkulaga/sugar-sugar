@@ -7,6 +7,7 @@ ro:
     loading: "Se încarcă..."
     continue: "Continuă"
     back: "Înapoi"
+    home: "Acasă"
     finish_exit: "Finalizează / Ieși"
 
   language:
@@ -33,6 +34,7 @@ ro:
     consent_receive_results: "Vreau să primesc rezultatele mai târziu"
     consent_keep_updated: "Țineți-mă la curent cu actualizările proiectului"
     consent_acknowledge_label: "Am 18+ ani și am citit formularul de consimțământ."
+    consent_gdpr_label: "Sunt de acord cu prelucrarea datelor mele cu caracter personal pentru scopurile menționate în nota de consimțământ, în conformitate cu Regulamentul general privind protecția datelor (UE) 2016/679. Înțeleg că datele mele vor fi gestionate în siguranță, nu vor fi partajate cu terți neautorizați și că îmi pot retrage consimțământul în orice moment."
     open_consent_form: "Deschide formularul de consimțământ"
     consent_required_error: "Te rugăm să confirmi că ai 18+ ani și ai citit formularul de consimțământ pentru a continua."
     next_hint: "Urmează: vei completa un formular scurt, apoi vei încărca date CGM (sau vei folosi setul exemplu)."
@@ -91,12 +93,12 @@ ro:
     start_prediction: "Pornește predicția"
     format_label: "Format"
     format_placeholder: "Alege o opțiune"
-    format_a_label: "A = folosește date generice"
-    format_b_label: "B = folosește propriile date"
-    format_c_label: "C = folosește atât date generice, cât și proprii"
-    format_help_a: "A — folosește date generice (nu sunt necesare date de la senzor). 12 runde folosind un set exemplu."
-    format_help_b: "B — folosește propriile date. Încarcă propriul fișier și prezice doar pe el."
-    format_help_c: "C — încearcă ambele. Vei încărca propriul fișier, dar fiecare rundă folosește fie date exemplu, fie datele tale."
+    format_a_label: "Date generice"
+    format_b_label: "Datele mele"
+    format_c_label: "Date generice + datele mele"
+    format_help_a: "Date generice — folosește date generice (nu sunt necesare date de la senzor). 12 runde folosind un set exemplu."
+    format_help_b: "Datele mele — folosește propriile date. Încarcă propriul fișier și prezice doar pe el."
+    format_help_c: "Date generice + datele mele — încearcă ambele. Vei încărca propriul fișier, dar fiecare rundă folosește fie date generice, fie datele tale."
     data_usage_consent_label: "Sunt de acord cu utilizarea datelor mele CGM încărcate pentru acest studiu."
     data_usage_consent_required: "Te rugăm să confirmi consimțământul pentru utilizarea datelor ca să continui."
 
@@ -191,9 +193,9 @@ ro:
 
   switch_format:
     title: "Încearcă o altă opțiune"
-    try_a: "Încearcă A = folosește date generice"
-    try_b: "Încearcă B = folosește propriile date"
-    try_c: "Încearcă C = folosește atât date generice, cât și proprii"
+    try_a: "Încearcă date exemplu = folosește date generice"
+    try_b: "Încearcă datele mele = folosește propriile date"
+    try_c: "Încearcă date exemplu + datele mele = folosește atât date generice, cât și proprii"
     not_eligible_no_cgm: "B/C sunt disponibile doar dacă ai spus că ai date CGM."
 
   results_disclaimer:
