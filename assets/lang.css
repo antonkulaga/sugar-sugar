@@ -83,8 +83,9 @@ blue on hover.
 #landing-continue,
 #start-button,
 #submit-button,
-#test-me-button {
-  background-color: #1e88e5 !important;
+#test-me-button,
+#next-round-button {
+  background-color: #4CBB17 !important;
   color: white !important;
   border: none !important;
 }
@@ -92,8 +93,13 @@ blue on hover.
 #landing-continue:hover,
 #start-button:hover,
 #submit-button:hover,
-#test-me-button:hover {
-  background-color: #1565c0 !important;
+#test-me-button:hover,
+#next-round-button:hover {
+  background-color: #3A9B12 !important;
+}
+
+#submit-button:active {
+  background-color: #4CBB17 !important;
 }
 
 #landing-continue:disabled,

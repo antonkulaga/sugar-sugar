@@ -374,7 +374,7 @@ def display_page(
                 ]), warning_content, navbar
             return create_final_layout(full_df_data, user_info, glucose_unit, locale=locale), warning_content, navbar
         # Default route: landing page
-        return (LandingPage(locale=locale), warning_content, navbar)
+        return (LandingPage(locale=locale), warning_content, html.Div())
 
 @app.callback(
     Output('url', 'pathname', allow_duplicate=True),
