@@ -50,6 +50,7 @@ de:
     title: "Über Sugar Sugar"
     body: "Sugar Sugar ist ein Forschungswerkzeug, um zu messen, wie genau Menschen zukünftige Glukoseverläufe vorhersagen können. Deine Teilnahme hilft uns, menschliche Intuition zu verstehen und Vorhersagemodelle zu verbessern."
     study_design_title: "Studiendesign"
+    github_link_label: "Projekt auf GitHub"
 
   contact:
     title: "Kontakt"

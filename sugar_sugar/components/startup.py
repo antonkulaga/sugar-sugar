@@ -55,14 +55,6 @@ class StartupPage(html.Div):
         
         # Create the layout
         layout = [
-            html.A(
-                t("ui.startup.fork_me", locale=locale),
-                href="https://github.com/GlucoseDAO/sugar-sugar",
-                target="_blank",
-                rel="noopener noreferrer",
-                className="github-fork-ribbon github-fork-ribbon-right-bottom fixed",
-                **{"data-ribbon": "Fork me on GitHub"}
-            ),
             html.H1(t("ui.common.app_title", locale=locale), 
                 style={
                     'textAlign': 'center', 

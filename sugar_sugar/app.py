@@ -141,7 +141,6 @@ external_stylesheets = [
     dbc.themes.BOOTSTRAP,
     'https://cdn.jsdelivr.net/npm/fomantic-ui@2.9.3/dist/semantic.min.css',
     'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css',
-    'https://cdnjs.cloudflare.com/ajax/libs/github-fork-ribbon-css/0.2.3/gh-fork-ribbon.min.css'
 ]
 
 app = dash.Dash(__name__, 
@@ -503,6 +502,16 @@ def create_about_page(*, locale: str) -> html.Div:
     children: list[Any] = [
         html.H1(t("ui.about.title", locale=locale)),
         html.Div(t("ui.about.body", locale=locale), style={"marginBottom": "14px"}),
+        html.Div(
+            html.A(
+                t("ui.about.github_link_label", locale=locale),
+                href="https://github.com/GlucoseDAO/sugar-sugar",
+                target="_blank",
+                rel="noopener noreferrer",
+                style={"fontWeight": "700"},
+            ),
+            style={"marginBottom": "10px"},
+        ),
     ]
     if study_md:
         children.extend(
