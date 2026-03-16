@@ -54,7 +54,18 @@ ro:
 
   contact:
     title: "Contact"
-    body: "Dacă ai întrebări, feedback sau vrei să îți fie șterse datele, te rugăm să ne scrii la support@sugar-sugar.example.com."
+    body: "Dacă ai întrebări, feedback sau vrei să îți fie șterse datele, te rugăm să folosești contactele de mai jos."
+    study_contacts_title: "Contacte pentru studiu"
+    general_email_title: "Email general al echipei"
+    social_title: "Social media & comunitate"
+    platforms_title: "Website & platforme"
+    linkedin_title: "LinkedIn"
+    col_name: "Nume"
+    col_email: "Email"
+    col_platform: "Platformă"
+    col_link: "Link"
+    col_role: "Rol"
+    open_linkedin: "Deschide profilul"
 
   demo:
     title: "Demo"

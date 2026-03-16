@@ -72,7 +72,18 @@ en:
 
   contact:
     title: "Contact us"
-    body: "If you have questions, feedback, or want your data removed, please email us."
+    body: "If you have questions, feedback, or want your data removed, please reach out using the contacts below."
+    study_contacts_title: "Study contacts"
+    general_email_title: "General team email"
+    social_title: "Social media & community"
+    platforms_title: "Website & platforms"
+    linkedin_title: "LinkedIn"
+    col_name: "Name"
+    col_email: "Email"
+    col_platform: "Platform"
+    col_link: "Link"
+    col_role: "Role"
+    open_linkedin: "Open profile"
 
   demo:
     title: "Demo"

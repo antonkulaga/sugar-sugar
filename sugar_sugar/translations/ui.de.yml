@@ -54,7 +54,18 @@ de:
 
   contact:
     title: "Kontakt"
-    body: "Wenn du Fragen, Feedback hast oder deine Daten entfernen möchtest, schreib uns bitte an support@sugar-sugar.example.com."
+    body: "Wenn du Fragen oder Feedback hast oder deine Daten entfernen lassen möchtest, nutze bitte die folgenden Kontakte."
+    study_contacts_title: "Studienkontakte"
+    general_email_title: "Allgemeine Team‑E‑Mail"
+    social_title: "Social Media & Community"
+    platforms_title: "Website & Plattformen"
+    linkedin_title: "LinkedIn"
+    col_name: "Name"
+    col_email: "E‑Mail"
+    col_platform: "Plattform"
+    col_link: "Link"
+    col_role: "Rolle"
+    open_linkedin: "Profil öffnen"
 
   demo:
     title: "Demo"

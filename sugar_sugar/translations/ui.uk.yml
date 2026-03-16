@@ -54,7 +54,18 @@ uk:
 
   contact:
     title: "Контакти"
-    body: "Якщо у вас є питання, відгуки або ви хочете, щоб ваші дані були видалені, напишіть нам на support@sugar-sugar.example.com."
+    body: "Якщо у вас є питання, відгуки або ви хочете, щоб ваші дані були видалені, скористайтеся контактами нижче."
+    study_contacts_title: "Контакти для дослідження"
+    general_email_title: "Загальна пошта команди"
+    social_title: "Соцмережі та спільнота"
+    platforms_title: "Сайт та платформи"
+    linkedin_title: "LinkedIn"
+    col_name: "Ім’я"
+    col_email: "Ел. пошта"
+    col_platform: "Платформа"
+    col_link: "Посилання"
+    col_role: "Роль"
+    open_linkedin: "Відкрити профіль"
 
   demo:
     title: "Демо"

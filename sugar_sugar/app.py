@@ -55,6 +55,7 @@ from sugar_sugar.components.header import HeaderComponent
 from sugar_sugar.components.ending import EndingPage
 from sugar_sugar.components.navbar import NavBar, get_navbar_back_href
 from sugar_sugar.generic_sources_metadata import load_generic_sources_metadata
+from sugar_sugar.contact_info import load_contact_info
 
 # Type aliases for clarity
 TableData = List[Dict[str, str]]  # Format for the predictions table data
@@ -547,11 +548,177 @@ def create_about_page(*, locale: str) -> html.Div:
 
 
 def create_contact_page(*, locale: str) -> html.Div:
-    return create_info_page(
-        locale=locale,
-        title=t('ui.contact.title', locale=locale),
-        body=t('ui.contact.body', locale=locale),
-    )
+    info = load_contact_info()
+    page_children: list[Any] = [
+        html.H1(t("ui.contact.title", locale=locale)),
+        html.Div(t("ui.contact.body", locale=locale), style={"marginBottom": "14px"}),
+    ]
+
+    def table_style() -> dict[str, Any]:
+        return {
+            "width": "100%",
+            "borderCollapse": "collapse",
+            "background": "rgba(255,255,255,0.75)",
+        }
+
+    def th_style() -> dict[str, Any]:
+        return {"textAlign": "left", "padding": "8px 10px", "borderBottom": "1px solid rgba(15, 23, 42, 0.12)"}
+
+    def td_style() -> dict[str, Any]:
+        return {"textAlign": "left", "padding": "8px 10px", "verticalAlign": "top", "borderBottom": "1px solid rgba(15, 23, 42, 0.06)"}
+
+    if info.study_contacts:
+        page_children.extend(
+            [
+                html.H2(t("ui.contact.study_contacts_title", locale=locale)),
+                html.Table(
+                    [
+                        html.Thead(
+                            html.Tr(
+                                [
+                                    html.Th(t("ui.contact.col_name", locale=locale), style=th_style()),
+                                    html.Th(t("ui.contact.col_email", locale=locale), style=th_style()),
+                                ]
+                            )
+                        ),
+                        html.Tbody(
+                            [
+                                html.Tr(
+                                    [
+                                        html.Td(item.name, style=td_style()),
+                                        html.Td(
+                                            html.A(item.email, href=f"mailto:{item.email}"),
+                                            style=td_style(),
+                                        ),
+                                    ]
+                                )
+                                for item in info.study_contacts
+                            ]
+                        ),
+                    ],
+                    style=table_style(),
+                ),
+                html.Hr(style={"margin": "18px 0"}),
+            ]
+        )
+
+    if info.general_email:
+        page_children.extend(
+            [
+                html.H2(t("ui.contact.general_email_title", locale=locale)),
+                html.Div(
+                    html.A(info.general_email, href=f"mailto:{info.general_email}", style={"fontWeight": "700"}),
+                    style={"marginBottom": "18px"},
+                ),
+            ]
+        )
+
+    if info.social_links:
+        page_children.append(html.H2(t("ui.contact.social_title", locale=locale)))
+        page_children.append(
+            html.Table(
+                [
+                    html.Thead(
+                        html.Tr(
+                            [
+                                html.Th(t("ui.contact.col_platform", locale=locale), style=th_style()),
+                                html.Th(t("ui.contact.col_link", locale=locale), style=th_style()),
+                            ]
+                        )
+                    ),
+                    html.Tbody(
+                        [
+                            html.Tr(
+                                [
+                                    html.Td(item.platform, style=td_style()),
+                                    html.Td(
+                                        html.A(item.label, href=item.url, target="_blank", rel="noopener noreferrer"),
+                                        style=td_style(),
+                                    ),
+                                ]
+                            )
+                            for item in info.social_links
+                        ]
+                    ),
+                ],
+                style=table_style(),
+            )
+        )
+        page_children.append(html.Hr(style={"margin": "18px 0"}))
+
+    if info.platform_links:
+        page_children.append(html.H2(t("ui.contact.platforms_title", locale=locale)))
+        page_children.append(
+            html.Table(
+                [
+                    html.Thead(
+                        html.Tr(
+                            [
+                                html.Th(t("ui.contact.col_platform", locale=locale), style=th_style()),
+                                html.Th(t("ui.contact.col_link", locale=locale), style=th_style()),
+                            ]
+                        )
+                    ),
+                    html.Tbody(
+                        [
+                            html.Tr(
+                                [
+                                    html.Td(item.platform, style=td_style()),
+                                    html.Td(
+                                        html.A(item.label, href=item.url, target="_blank", rel="noopener noreferrer"),
+                                        style=td_style(),
+                                    ),
+                                ]
+                            )
+                            for item in info.platform_links
+                        ]
+                    ),
+                ],
+                style=table_style(),
+            )
+        )
+        page_children.append(html.Hr(style={"margin": "18px 0"}))
+
+    if info.linkedin_contacts:
+        page_children.append(html.H2(t("ui.contact.linkedin_title", locale=locale)))
+        page_children.append(
+            html.Table(
+                [
+                    html.Thead(
+                        html.Tr(
+                            [
+                                html.Th(t("ui.contact.col_name", locale=locale), style=th_style()),
+                                html.Th(t("ui.contact.col_role", locale=locale), style=th_style()),
+                                html.Th(t("ui.contact.col_link", locale=locale), style=th_style()),
+                            ]
+                        )
+                    ),
+                    html.Tbody(
+                        [
+                            html.Tr(
+                                [
+                                    html.Td(item.name, style=td_style()),
+                                    html.Td(item.role, style=td_style()),
+                                    html.Td(
+                                        html.A(
+                                            t("ui.contact.open_linkedin", locale=locale),
+                                            href=item.url,
+                                            target="_blank",
+                                            rel="noopener noreferrer",
+                                        ),
+                                        style=td_style(),
+                                    ),
+                                ]
+                            )
+                            for item in info.linkedin_contacts
+                        ]
+                    ),
+                ],
+                style=table_style(),
+            )
+        )
+
+    return html.Div(page_children, className="info-page")
 
 
 def create_demo_page(*, locale: str) -> html.Div:
