@@ -134,6 +134,7 @@ ro:
     example_data_now_using: "Acum se folosesc date exemplu. Încarcă un fișier CSV pentru o analiză personalizată."
     example_data_warning: "În prezent se folosesc date exemplu. Încarcă propriul CSV Dexcom/Libre/Medtronic pentru o analiză personalizată."
     current_data_source: "Sursa curentă de date:"
+    weight_label: "Greutate"
     description_1: "Testează-ți abilitățile de predicție a glucozei!"
     description_2: "Fă clic pe grafic sau desenează linii pentru a prezice valorile viitoare ale glucozei."
     description_3: "Jocul îți va arăta cât de precise sunt predicțiile tale comparativ cu măsurătorile reale."

@@ -130,27 +130,50 @@ class HeaderComponent(Div):
                 # Data source indicator (always visible).
                 html.Div(
                     [
-                        html.Label(
-                            t("ui.header.current_data_source", locale=self._locale),
+                        html.Div(
+                            [
+                                html.Label(
+                                    t("ui.header.current_data_source", locale=self._locale),
+                                    style={
+                                        'fontWeight': 'bold',
+                                        'marginRight': '8px',
+                                        'color': '#4a5568',
+                                        'fontSize': '14px',
+                                    },
+                                ),
+                                html.Div(
+                                    id='data-source-display',
+                                    children="example.csv",
+                                    style={
+                                        'color': '#2c5282',
+                                        'fontStyle': 'italic',
+                                        'fontSize': '14px',
+                                        'fontWeight': '500',
+                                        'overflow': 'hidden',
+                                        'textOverflow': 'ellipsis',
+                                        'maxWidth': '300px',
+                                        'whiteSpace': 'nowrap',
+                                    },
+                                ),
+                            ],
                             style={
-                                'fontWeight': 'bold',
-                                'marginRight': '8px',
-                                'color': '#4a5568',
-                                'fontSize': '14px',
+                                'display': 'flex',
+                                'alignItems': 'center',
+                                'width': '100%',
                             },
                         ),
                         html.Div(
-                            id='data-source-display',
-                            children="example.csv",
+                            id='generic-source-metadata-display',
+                            children="",
                             style={
                                 'color': '#2c5282',
                                 'fontStyle': 'italic',
                                 'fontSize': '14px',
                                 'fontWeight': '500',
-                                'overflow': 'hidden',
-                                'textOverflow': 'ellipsis',
-                                'maxWidth': '300px',
-                                'whiteSpace': 'nowrap',
+                                'maxWidth': '100%',
+                                'whiteSpace': 'normal',
+                                'overflowWrap': 'anywhere',
+                                'marginTop': '4px',
                             },
                         ),
                     ],
@@ -160,7 +183,8 @@ class HeaderComponent(Div):
                         'backgroundColor': '#f7fafc',
                         'borderRadius': '5px',
                         'display': 'flex',
-                        'alignItems': 'center',
+                        'flexDirection': 'column',
+                        'alignItems': 'flex-start',
                         'width': '100%',
                         'boxShadow': '0 1px 2px rgba(0,0,0,0.05)',
                     },

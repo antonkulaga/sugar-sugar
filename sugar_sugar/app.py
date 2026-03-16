@@ -54,6 +54,7 @@ from sugar_sugar.components.submit import SubmitComponent
 from sugar_sugar.components.header import HeaderComponent
 from sugar_sugar.components.ending import EndingPage
 from sugar_sugar.components.navbar import NavBar, get_navbar_back_href
+from sugar_sugar.generic_sources_metadata import load_generic_sources_metadata
 
 # Type aliases for clarity
 TableData = List[Dict[str, str]]  # Format for the predictions table data
@@ -63,6 +64,7 @@ MAX_ROUNDS: int = 12
 GLUCOSE_MGDL_PER_MMOLL: float = 18.0
 
 FORMAT_ORDER: dict[str, int] = {"C": 0, "B": 1, "A": 2}
+GENERIC_SOURCES_METADATA = load_generic_sources_metadata()
 
 
 def _format_label(format_code: str, *, locale: str) -> str:
@@ -2829,6 +2831,42 @@ def update_data_source_display(
     if fmt in ("B", "C"):
         return t("ui.header.upload_required", locale=normalize_locale(interface_language))
     return "example.csv"
+
+
+@app.callback(
+    Output("generic-source-metadata-display", "children"),
+    [
+        Input("url", "pathname"),
+        Input("data-source-name", "data"),
+        Input("interface-language", "data"),
+    ],
+    prevent_initial_call=False,
+)
+def update_generic_source_metadata_display(
+    pathname: str,
+    source_name: Optional[str],
+    interface_language: Optional[str],
+) -> str:
+    if pathname != "/prediction":
+        return ""
+
+    key = Path(str(source_name or "example.csv")).name
+    meta = GENERIC_SOURCES_METADATA.get(key)
+    if meta is None:
+        return ""
+
+    locale = normalize_locale(interface_language)
+    gender_raw = str(meta.gender or "").strip().lower()
+    if gender_raw in ("male", "female", "na"):
+        gender_display = t(f"ui.startup.gender_{gender_raw}", locale=locale)
+    else:
+        gender_display = meta.gender
+
+    return (
+        f"{t('ui.startup.age_label', locale=locale)}: {meta.age} · "
+        f"{t('ui.startup.gender_label', locale=locale)}: {gender_display} · "
+        f"{t('ui.header.weight_label', locale=locale)}: {meta.weight}"
+    )
 
 # Add callback for random slider initialization when prediction page components are ready
 @app.callback(
