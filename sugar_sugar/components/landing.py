@@ -230,9 +230,22 @@ class LandingPage(html.Div):
                         t("ui.consent_form.withdraw_text", locale=locale),
                         style={"color": "#334155", "lineHeight": "1.6"},
                     )
-                ]
+                ],
+                style={
+                    "maxHeight": "calc(100vh - 320px)",
+                    "overflowY": "auto",
+                    "paddingRight": "10px",
+                    "minHeight": "0",
+                },
             ),
-            style={"borderRadius": "14px", "border": "1px solid rgba(15, 23, 42, 0.10)"},
+            style={
+                "borderRadius": "14px",
+                "border": "1px solid rgba(15, 23, 42, 0.10)",
+                "flex": "1",
+                "display": "flex",
+                "flexDirection": "column",
+                "minHeight": "0",
+            },
         )
 
         consent_card = dbc.Card(
@@ -300,10 +313,10 @@ class LandingPage(html.Div):
                         id="landing-error",
                         style={"marginTop": "12px"},
                     ),
-                    dbc.Button(
+                    html.Button(
                         t("ui.common.continue", locale=locale),
                         id="landing-continue",
-                        color="primary",
+                        className="ui green button",
                         disabled=True,
                         style={
                             "marginTop": "14px",
@@ -340,7 +353,7 @@ class LandingPage(html.Div):
                         ),
                         dbc.Col(consent_card, md=6),
                     ],
-                    className="g-4",
+                    className="g-4 align-items-stretch",
                 ),
             ],
             fluid=False,

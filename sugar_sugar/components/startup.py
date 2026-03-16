@@ -259,6 +259,7 @@ class StartupPage(html.Div):
                         html.Button(
                             t("ui.startup.just_test_me", locale=locale),
                             id='test-me-button',
+                            className="ui green button",
                             style={
                                 'backgroundColor': '#2196F3',
                                 'color': 'white',
@@ -287,6 +288,7 @@ class StartupPage(html.Div):
                         html.Button(
                             t("ui.startup.start_prediction", locale=locale),
                             id='start-button',
+                            className="ui green button",
                             disabled=True,  # Initially disabled until consent is given
                             style={
                                 'backgroundColor': '#cccccc',  # Gray when disabled
