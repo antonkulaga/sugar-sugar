@@ -66,11 +66,10 @@ class ConsentFormPage(html.Div):
                                             style={"color": "#334155", "lineHeight": "1.6"},
                                         ),
                                         html.Hr(style={"margin": "18px 0"}),
-                                        dbc.Button(
+                                        html.A(
                                             t("ui.common.back", locale=locale),
                                             href="/",
-                                            color="secondary",
-                                            outline=True,
+                                            className="ui basic secondary button",
                                             style={"fontWeight": "800", "marginBottom": "14px"},
                                         )
                                     ]

@@ -138,6 +138,7 @@ example_initial_slider_value = example_initial_start
 external_stylesheets = [
     'https://codepen.io/chriddyp/pen/bWLwgP.css',
     dbc.themes.BOOTSTRAP,
+    'https://cdn.jsdelivr.net/npm/fomantic-ui@2.9.3/dist/semantic.min.css',
     'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css',
     'https://cdnjs.cloudflare.com/ajax/libs/github-fork-ribbon-css/0.2.3/gh-fork-ribbon.min.css'
 ]
@@ -373,8 +374,14 @@ def display_page(
                     ], style={'textAlign': 'center'})
                 ]), warning_content, navbar
             return create_final_layout(full_df_data, user_info, glucose_unit, locale=locale), warning_content, navbar
+        if pathname == '/about':
+            return create_about_page(locale=locale), warning_content, navbar
+        if pathname == '/contact':
+            return create_contact_page(locale=locale), warning_content, navbar
+        if pathname == '/demo':
+            return create_demo_page(locale=locale), warning_content, navbar
         # Default route: landing page
-        return (LandingPage(locale=locale), warning_content, navbar)
+        return (LandingPage(locale=locale), warning_content, create_landing_navbar(locale=locale))
 
 @app.callback(
     Output('url', 'pathname', allow_duplicate=True),
@@ -387,6 +394,91 @@ def handle_back_button(back_href: str, current_pathname: Optional[str]) -> str:
     if back_href and back_href != "#":
         return get_navbar_back_href(current_pathname)
     return no_update
+
+def create_landing_navbar(*, locale: str) -> html.Div:
+    """Create a minimal navbar for the landing page with only About and Contact buttons."""
+    about_button = html.A(
+        t("ui.common.about", locale=locale),
+        id="navbar-about-button",
+        href="/about",
+        className="ui small basic button",
+        style={
+            "fontWeight": "600",
+            "fontSize": "14px",
+        },
+    )
+
+    contact_button = html.A(
+        t("ui.common.contact_us", locale=locale),
+        id="navbar-contact-button",
+        href="/contact",
+        className="ui small basic button",
+        style={
+            "fontWeight": "600",
+            "fontSize": "14px",
+            "marginLeft": "8px",
+        },
+    )
+
+    demo_button = html.A(
+        t("ui.common.demo", locale=locale),
+        id="navbar-demo-button",
+        href="/demo",
+        className="ui small basic button",
+        style={
+            "fontWeight": "600",
+            "fontSize": "14px",
+            "marginLeft": "8px",
+        },
+    )
+
+    return html.Div(
+        [about_button, contact_button, demo_button],
+        style={
+            "backgroundColor": "#1e88e5",
+            "padding": "12px 20px",
+            "boxShadow": "0 2px 4px rgba(0,0,0,0.1)",
+            "display": "flex",
+            "alignItems": "center",
+            "justifyContent": "flex-start",
+            "marginBottom": "20px",
+        },
+    )
+
+from dash import html
+
+def create_info_page(*, locale: str, title: str, body: str) -> html.Div:
+    return html.Div(
+        [
+            html.H1(title),
+            html.Div(body),
+        ],
+        className="info-page"
+    )
+
+def create_about_page(*, locale: str) -> html.Div:
+    return create_info_page(
+        locale=locale,
+        title=t('ui.about.title', locale=locale),
+        body=t('ui.about.body', locale=locale),
+    )
+
+
+def create_contact_page(*, locale: str) -> html.Div:
+    return create_info_page(
+        locale=locale,
+        title=t('ui.contact.title', locale=locale),
+        body=t('ui.contact.body', locale=locale),
+    )
+
+
+def create_demo_page(*, locale: str) -> html.Div:
+    return create_info_page(
+        locale=locale,
+        title=t('ui.demo.title', locale=locale),
+        body=t('ui.demo.body', locale=locale),
+    )
+
 
 def create_prediction_layout(*, locale: str, format_value: str, user_info: Dict[str, Any]) -> html.Div:
     """Create the prediction page layout"""
@@ -547,11 +639,10 @@ def show_upload_required_alert(
     if has_prior_rounds:
         children += [
             html.Br(),
-            dbc.Button(
+            html.Button(
                 t("ui.common.back", locale=locale) + " → " + t("ui.final.title", locale=locale),
                 id="back-to-final-from-upload",
-                color="link",
-                size="sm",
+                className="ui small button",
                 style={"paddingLeft": "0", "marginTop": "6px"},
             ),
         ]
@@ -846,6 +937,7 @@ def create_ending_layout(
             html.Button(
                 t("ui.ending.next_round", locale=locale),
                 id='next-round-button',
+                className="ui green button",
                 disabled=is_last_round,
                 style={
                     'backgroundColor': '#007bff' if not is_last_round else '#cccccc',
@@ -870,7 +962,7 @@ def create_ending_layout(
                 id='finish-study-button-ending',
                 autoFocus=False,
                 style={
-                    'backgroundColor': '#6c757d',
+                    'backgroundColor': '#007bff',
                     'color': 'white',
                     'padding': 'clamp(12px, 2vw, 16px) clamp(18px, 3vw, 26px)',
                     'border': 'none',
@@ -1414,6 +1506,7 @@ def create_final_layout(full_df_data: Optional[Dict], user_info: Dict[str, Any],
             html.Button(
                 t("ui.final.start_over", locale=locale),
                 id='restart-button',
+                className="ui green button",
                 style={
                     'backgroundColor': '#007bff',
                     'color': 'white',
@@ -2106,7 +2199,7 @@ app.clientside_callback(
             window._lastConsentScrollRequest = 0;
         }
 
-        if (pathname === '/ending' || pathname === '/final') {
+        if (pathname === '/ending' || pathname === '/final' || pathname === '/startup' || pathname === '/prediction') {
             window.scrollTo(0, 0);
             return '';
         }

@@ -9,6 +9,9 @@ en:
     back: "Back"
     home: "Home"
     finish_exit: "Finish / Exit"
+    about: "About"
+    contact_us: "Contact us"
+    demo: "Demo"
 
   language:
     choose: "Language"
@@ -56,6 +59,18 @@ en:
       - "We will only use the data according to your selections on the startup page."
     withdraw_title: "Withdrawal"
     withdraw_text: "You can stop participating at any time by closing the browser tab/window. If you want your data removed, please contact the study organizers."
+
+  about:
+    title: "About Sugar Sugar"
+    body: "Sugar Sugar is a research tool designed to measure how accurately humans can predict future glucose trends."
+
+  contact:
+    title: "Contact us"
+    body: "If you have questions, feedback, or want your data removed, please email us."
+
+  demo:
+    title: "Demo"
+    body: "Try a quick demo of the Sugar Sugar glucose prediction game."
 
   startup:
     fork_me: "Fork me on GitHub"

@@ -9,6 +9,9 @@ de:
     back: "Zurück"
     home: "Startseite"
     finish_exit: "Beenden / Verlassen"
+    about: "Über"
+    contact_us: "Kontakt"
+    demo: "Demo"
 
   language:
     choose: "Sprache"
@@ -39,8 +42,20 @@ de:
     consent_required_error: "Bitte bestätige, dass du 18+ bist und das Einwilligungsformular gelesen hast, um fortzufahren."
     next_hint: "Als Nächstes: kurzes Formular ausfüllen und dann CGM‑Daten hochladen (oder Beispieldaten verwenden)."
 
+  about:
+    title: "Über Sugar Sugar"
+    body: "Sugar Sugar ist ein Forschungswerkzeug, um zu messen, wie genau Menschen zukünftige Glukoseverläufe vorhersagen können. Deine Teilnahme hilft uns, menschliche Intuition zu verstehen und Vorhersagemodelle zu verbessern."
+
+  contact:
+    title: "Kontakt"
+    body: "Wenn du Fragen, Feedback hast oder deine Daten entfernen möchtest, schreib uns bitte an support@sugar-sugar.example.com."
+
+  demo:
+    title: "Demo"
+    body: "Probiere eine kurze Demo des Sugar Sugar Glukose-Vorhersage-Spiels. Dies ist eine Beispielrunde mit generischen Daten."
+
   consent_form:
-    title: "Einwilligungsformular"
+    title: "Einwilligungserklärung"
     subtitle: "Bitte lies diese Informationen, bevor du fortfährst. Dies ist eine Basis‑Version und wird noch aktualisiert."
     adults_only: "Du musst mindestens 18 Jahre alt sein, um an dieser Studie teilzunehmen."
     summary_title: "Zusammenfassung"

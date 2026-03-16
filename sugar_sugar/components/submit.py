@@ -49,19 +49,17 @@ class SubmitComponent(html.Div):
                     'fontStyle': 'italic'
                 }
             ),
-            dbc.Button(
+            html.Button(
                 t("ui.submit.submit", locale=self._locale),
                 id="submit-button",
-                color="primary",
-                className="mt-4",
+                className="ui green button mt-4",
                 disabled=True,  # Start disabled
                 style={'width': '300px', 'fontSize': '25px', 'padding': '15px 0', 'textAlign': 'center', 'verticalAlign': 'middle', 'lineHeight': '1.5', 'height': '60px'}
             ),
-            dbc.Button(
+            html.Button(
                 t("ui.common.finish_exit", locale=self._locale),
                 id="finish-study-button",
-                color="secondary",
-                className="mt-3",
+                className="ui primary button mt-3",
                 style={
                     'width': '300px',
                     'fontSize': '18px',

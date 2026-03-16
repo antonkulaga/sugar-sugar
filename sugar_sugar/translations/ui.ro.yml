@@ -9,6 +9,9 @@ ro:
     back: "Înapoi"
     home: "Acasă"
     finish_exit: "Finalizează / Ieși"
+    about: "Despre"
+    contact_us: "Contact"
+    demo: "Demo"
 
   language:
     choose: "Limbă"
@@ -38,6 +41,18 @@ ro:
     open_consent_form: "Deschide formularul de consimțământ"
     consent_required_error: "Te rugăm să confirmi că ai 18+ ani și ai citit formularul de consimțământ pentru a continua."
     next_hint: "Urmează: vei completa un formular scurt, apoi vei încărca date CGM (sau vei folosi setul exemplu)."
+
+  about:
+    title: "Despre Sugar Sugar"
+    body: "Sugar Sugar este un instrument de cercetare creat pentru a măsura cât de precis pot oamenii să prevadă tendințele viitoare ale glucozei. Participarea ta ne ajută să înțelegem intuiția umană și să îmbunătățim modelele de predicție."
+
+  contact:
+    title: "Contact"
+    body: "Dacă ai întrebări, feedback sau vrei să îți fie șterse datele, te rugăm să ne scrii la support@sugar-sugar.example.com."
+
+  demo:
+    title: "Demo"
+    body: "Încearcă o demonstrație rapidă a jocului Sugar Sugar de predicție a glucozei. Aceasta este o rundă de exemplu folosind date generice."
 
   consent_form:
     title: "Formular de consimțământ"

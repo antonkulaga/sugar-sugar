@@ -66,66 +66,27 @@ body {
   transform: translateY(0);
 }
 
-/*
-Global text sizing: make all non-header text match the size used for the
-"I am 18+ years old ..." acknowledgement label (16px).  Heading elements are
-excluded so their explicit sizes remain untouched.
-*/
 body :not(h1):not(h2):not(h3):not(h4):not(h5):not(h6) {
   font-size: 16px !important;
 }
 
-/*
-Button styling: primary action buttons (Continue, Start Predicting, Submit, Open
-consent form, Back) should be blue with white text by default, with a darker
-blue on hover.
-*/
-#landing-continue,
-#start-button,
-#submit-button,
-#test-me-button {
-  background-color: #1e88e5 !important;
-  color: white !important;
-  border: none !important;
+/* Custom green color for specific buttons */
+.ui.button.green {
+  background-color: #4CBB17 !important;
 }
 
-#landing-continue:hover,
-#start-button:hover,
-#submit-button:hover,
-#test-me-button:hover {
-  background-color: #1565c0 !important;
+.ui.button.green:hover {
+  background-color: #3A9B12 !important;
 }
 
-#landing-continue:disabled,
-#start-button:disabled {
-  background-color: #555555 !important;
-  color: white !important;
-  cursor: not-allowed !important;
+/* Navbar buttons styling */
+#navbar-back-button, #navbar-home-button, #navbar-about-button, #navbar-contact-button, #navbar-demo-button {
+  background-color: white !important;
+  color: black !important;
 }
 
-#submit-button:disabled {
-  background-color: #555555 !important;
-  color: white !important;
-  cursor: not-allowed !important;
-}
-
-/* Style "Open consent form" and "Back" buttons (bootstrap secondary outline) */
-.btn-secondary {
-  background-color: #1e88e5 !important;
-  color: white !important;
-  border-color: #1e88e5 !important;
-}
-
-.btn-secondary:hover {
-  background-color: #1565c0 !important;
-  border-color: #1565c0 !important;
-}
-
-.btn-secondary:disabled,
-.btn-secondary.disabled {
-  background-color: #cccccc !important;
-  border-color: #cccccc !important;
-  color: white !important;
+#navbar-back-button:hover, #navbar-home-button:hover, #navbar-about-button:hover, #navbar-contact-button:hover, #navbar-demo-button:hover {
+  background-color: #e0e0e0 !important;
 }
 
 /* Make checkboxes outlined in black on the landing page */
