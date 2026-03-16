@@ -21,6 +21,10 @@ de:
     ro: "Rumänisch"
 
   landing:
+    patient_consent_form_title: "Patienten-Einwilligungsformular"
+    required_consents_title: "Erforderliche Einwilligungen"
+    optional_consents_title: "Optionale Einwilligungen"
+    consent_upload_own_data: "Ich willige ein, eigene CGM-Daten für optionale Aufgaben hochzuladen."
     tagline: "Ein Spiel, um deine Fähigkeiten zur Glukose‑Vorhersage zu testen."
     how_it_works: "So funktioniert es"
     how_it_works_steps:
@@ -36,7 +40,7 @@ de:
     consent_play_only: "Ich möchte nur spielen (meine CGM‑/Spieldaten nicht speichern)"
     consent_receive_results: "Ich möchte meine Ergebnisse später erhalten"
     consent_keep_updated: "Haltet mich über Projekt‑Updates auf dem Laufenden"
-    consent_acknowledge_label: "Ich bin mindestens 18 Jahre alt und habe das Einwilligungsformular gelesen."
+    consent_acknowledge_label: "Ich bin mindestens 18 Jahre alt und habe die Teilnahmeinformationen / Bedingungen gelesen."
     consent_gdpr_label: "Ich stimme der Verarbeitung meiner personenbezogenen Daten zu den im Einwilligungshinweis angegebenen Zwecken gemäß der Datenschutz-Grundverordnung (EU) 2016/679 zu. Ich verstehe, dass meine Daten sicher verarbeitet werden, nicht an unbefugte Dritte weitergegeben werden und dass ich meine Einwilligung jederzeit widerrufen kann."
     open_consent_form: "Einwilligungsformular öffnen"
     consent_required_error: "Bitte bestätige, dass du 18+ bist und das Einwilligungsformular gelesen hast, um fortzufahren."
@@ -45,6 +49,7 @@ de:
   about:
     title: "Über Sugar Sugar"
     body: "Sugar Sugar ist ein Forschungswerkzeug, um zu messen, wie genau Menschen zukünftige Glukoseverläufe vorhersagen können. Deine Teilnahme hilft uns, menschliche Intuition zu verstehen und Vorhersagemodelle zu verbessern."
+    study_design_title: "Studiendesign"
 
   contact:
     title: "Kontakt"

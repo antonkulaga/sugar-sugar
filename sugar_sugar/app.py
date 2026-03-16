@@ -1,4 +1,5 @@
 from typing import Any, Dict, List, Optional, Tuple, Union
+from functools import lru_cache
 import dash
 from dash import dcc, html, Output, Input, State, no_update, dash_table, ctx
 from dash.dash_table.Format import Format, Scheme
@@ -155,6 +156,30 @@ app.clientside_callback(
     Output('user-agent', 'data'),
     Input('url', 'href'),
     prevent_initial_call=False
+)
+
+app.clientside_callback(
+    """
+    function(n_intervals, alreadyComplete) {
+        if (alreadyComplete) {
+            return [true, true];
+        }
+        var el = document.getElementById('consent-notice-scroll');
+        if (!el) {
+            return [false, false];
+        }
+        var epsilon = 4;
+        var atEnd = (el.scrollTop + el.clientHeight) >= (el.scrollHeight - epsilon);
+        return [atEnd, atEnd];
+    }
+    """,
+    [
+        Output("consent-scroll-complete", "data"),
+        Output("consent-scroll-poll", "disabled"),
+    ],
+    Input("consent-scroll-poll", "n_intervals"),
+    State("consent-scroll-complete", "data"),
+    prevent_initial_call=False,
 )
 
 
@@ -456,12 +481,58 @@ def create_info_page(*, locale: str, title: str, body: str) -> html.Div:
         className="info-page"
     )
 
+@lru_cache(maxsize=4)
+def _study_design_markdown(locale: str) -> str:
+    loc = normalize_locale(locale)
+    base = project_root / "data" / "input" / "study_design" / "The study - technical Guidebook.md"
+
+    candidates: list[Path] = []
+    if base.exists():
+        candidates.append(base.with_name(f"{base.stem}.{loc}{base.suffix}"))
+        candidates.append(base.with_name(f"{base.stem}_{loc}{base.suffix}"))
+        candidates.append(base)
+
+    for p in candidates:
+        if p.exists():
+            return p.read_text(encoding="utf-8").strip()
+    return ""
+
+
 def create_about_page(*, locale: str) -> html.Div:
-    return create_info_page(
-        locale=locale,
-        title=t('ui.about.title', locale=locale),
-        body=t('ui.about.body', locale=locale),
-    )
+    study_md = _study_design_markdown(locale)
+    children: list[Any] = [
+        html.H1(t("ui.about.title", locale=locale)),
+        html.Div(t("ui.about.body", locale=locale), style={"marginBottom": "14px"}),
+    ]
+    if study_md:
+        children.extend(
+            [
+                html.Hr(style={"margin": "18px 0"}),
+                dbc.Accordion(
+                    [
+                        dbc.AccordionItem(
+                            title=t("ui.about.study_design_title", locale=locale),
+                            children=html.Div(
+                                dcc.Markdown(study_md, link_target="_blank"),
+                                style={
+                                    "maxHeight": "70vh",
+                                    "overflowY": "auto",
+                                    "paddingRight": "10px",
+                                    "border": "1px solid rgba(15, 23, 42, 0.10)",
+                                    "borderRadius": "12px",
+                                    "padding": "12px 14px",
+                                    "background": "rgba(255,255,255,0.75)",
+                                },
+                            ),
+                            item_id="study-design",
+                        )
+                    ],
+                    active_item=[],
+                    always_open=False,
+                ),
+            ]
+        )
+    return html.Div(children, className="info-page")
 
 
 def create_contact_page(*, locale: str) -> html.Div:

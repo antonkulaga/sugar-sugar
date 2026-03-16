@@ -11,6 +11,7 @@ import dash_bootstrap_components as dbc
 from dash import dcc, html, no_update
 from dash.dependencies import Input, Output, State
 
+from sugar_sugar.consent_notice_text import consent_notice_children
 from sugar_sugar.consent import ensure_consent_agreement_row, get_next_study_number
 from sugar_sugar.i18n import t, t_list
 
@@ -194,47 +195,88 @@ class LandingPage(html.Div):
             dbc.CardBody(
                 [
                     html.H3(
-                        t("ui.consent_form.title", locale=locale),
-                        style={"fontSize": "22px", "fontWeight": "800", "color": "#1565c0"},
+                        t("ui.landing.patient_consent_form_title", locale=locale),
+                        style={"fontSize": "22px", "fontWeight": "800", "color": "#1565c0", "marginBottom": "10px"},
                     ),
                     html.Div(
-                        t("ui.consent_form.subtitle", locale=locale),
-                        style={"color": "#334155", "lineHeight": "1.6", "marginBottom": "12px"},
+                        [
+                            *consent_notice_children(locale),
+                            html.Hr(style={"margin": "14px 0"}),
+                            html.H4(
+                                t("ui.landing.required_consents_title", locale=locale),
+                                style={"fontSize": "18px", "fontWeight": "800", "color": "#0f172a", "marginBottom": "8px"},
+                            ),
+                            dbc.Checklist(
+                                id="consent-acknowledge",
+                                options=[{"label": f" {t('ui.landing.consent_acknowledge_label', locale=locale)}", "value": "ack"}],
+                                value=[],
+                                style={"fontSize": "16px", "marginBottom": "10px"},
+                            ),
+                            dbc.Checklist(
+                                id="consent-gdpr",
+                                options=[{"label": f" {t('ui.landing.consent_gdpr_label', locale=locale)}", "value": "gdpr"}],
+                                value=[],
+                                style={"fontSize": "16px"},
+                            ),
+                            html.Hr(style={"margin": "14px 0"}),
+                            html.H4(
+                                t("ui.landing.optional_consents_title", locale=locale),
+                                style={"fontSize": "18px", "fontWeight": "800", "color": "#0f172a", "marginBottom": "8px"},
+                            ),
+                            dbc.Checklist(
+                                id="consent-upload-own-data",
+                                options=[{"label": f" {t('ui.landing.consent_upload_own_data', locale=locale)}", "value": "upload_own_data"}],
+                                value=[],
+                                style={"fontSize": "16px", "marginBottom": "10px"},
+                            ),
+                            dbc.Checklist(
+                                id="consent-play-only",
+                                options=[{"label": f" {t('ui.landing.consent_play_only', locale=locale)}", "value": "play_only"}],
+                                value=[],
+                                style={"fontSize": "16px"},
+                            ),
+                            dbc.Checklist(
+                                id="consent-receive-results",
+                                options=[{"label": f" {t('ui.landing.consent_receive_results', locale=locale)}", "value": "receive_results"}],
+                                value=[],
+                                style={"fontSize": "16px", "marginTop": "10px"},
+                            ),
+                            dbc.Checklist(
+                                id="consent-keep-updated",
+                                options=[{"label": f" {t('ui.landing.consent_keep_updated', locale=locale)}", "value": "keep_updated"}],
+                                value=[],
+                                style={"fontSize": "16px", "marginTop": "10px"},
+                            ),
+                        ],
+                        style={
+                            "maxHeight": "calc(100vh - 360px)",
+                            "overflowY": "auto",
+                            "paddingRight": "10px",
+                            "minHeight": "0",
+                        },
+                        id="consent-notice-scroll",
                     ),
-                    dbc.Alert(
-                        t("ui.consent_form.adults_only", locale=locale),
-                        color="warning",
-                        style={"marginBottom": "14px"},
-                    ),
-                    html.H4(
-                        t("ui.consent_form.summary_title", locale=locale),
-                        style={"fontSize": "20px", "fontWeight": "800", "color": "#0f172a"},
-                    ),
-                    html.Ul(
-                        [html.Li(item) for item in t_list("ui.consent_form.summary_bullets", locale=locale)],
-                        style={"color": "#334155", "lineHeight": "1.6"},
-                    ),
-                    html.H4(
-                        t("ui.consent_form.data_title", locale=locale),
-                        style={"fontSize": "20px", "fontWeight": "800", "color": "#0f172a"},
-                    ),
-                    html.Ul(
-                        [html.Li(item) for item in t_list("ui.consent_form.data_bullets", locale=locale)],
-                        style={"color": "#334155", "lineHeight": "1.6"},
-                    ),
-                    html.H4(
-                        t("ui.consent_form.withdraw_title", locale=locale),
-                        style={"fontSize": "20px", "fontWeight": "800", "color": "#0f172a"},
+                    html.Div(id="landing-error", style={"marginTop": "12px"}),
+                    html.Button(
+                        t("ui.common.continue", locale=locale),
+                        id="landing-continue",
+                        className="ui green button",
+                        disabled=True,
+                        style={
+                            "marginTop": "14px",
+                            "width": "220px",
+                            "fontWeight": "700",
+                            "backgroundColor": "#555555",
+                            "color": "white",
+                            "cursor": "not-allowed",
+                        },
                     ),
                     html.Div(
-                        t("ui.consent_form.withdraw_text", locale=locale),
-                        style={"color": "#334155", "lineHeight": "1.6"},
-                    )
+                        t("ui.landing.next_hint", locale=locale),
+                        style={"color": "#64748b", "marginTop": "10px", "fontSize": "14px"},
+                    ),
                 ],
                 style={
-                    "maxHeight": "calc(100vh - 320px)",
-                    "overflowY": "auto",
-                    "paddingRight": "10px",
                     "minHeight": "0",
                 },
             ),
@@ -248,113 +290,16 @@ class LandingPage(html.Div):
             },
         )
 
-        consent_card = dbc.Card(
-            dbc.CardBody(
-                [
-                    html.H3(
-                        t("ui.landing.your_choices_title", locale=locale),
-                        style={"fontSize": "22px", "fontWeight": "800", "color": "#1565c0"},
-                    ),
-                    html.Div(
-                        t("ui.landing.your_choices_text", locale=locale),
-                        style={"color": "#334155", "lineHeight": "1.6", "marginBottom": "10px"},
-                    ),
-                    html.Div(
-                        [
-                            dbc.Checklist(
-                                id="consent-acknowledge",
-                                options=[
-                                    {
-                                        "label": f" {t('ui.landing.consent_acknowledge_label', locale=locale)}",
-                                        "value": "ack",
-                                    }
-                                ],
-                                value=[],
-                                style={"fontSize": "16px"},
-                            ),
-                        ],
-                        style={"marginBottom": "10px"},
-                    ),
-                    dbc.Checklist(
-                        id="consent-gdpr",
-                        options=[
-                            {
-                                "label": f" {t('ui.landing.consent_gdpr_label', locale=locale)}",
-                                "value": "gdpr",
-                            }
-                        ],
-                        value=[],
-                        style={"fontSize": "16px", "marginBottom": "10px"},
-                    ),
-                    dbc.Checklist(
-                        id="consent-play-only",
-                        options=[
-                            {
-                                "label": f" {t('ui.landing.consent_play_only', locale=locale)}",
-                                "value": "play_only",
-                            }
-                        ],
-                        value=[],
-                        style={"fontSize": "16px"},
-                    ),
-                    dbc.Checklist(
-                        id="consent-receive-results",
-                        options=[{"label": f" {t('ui.landing.consent_receive_results', locale=locale)}", "value": "receive_results"}],
-                        value=[],
-                        style={"fontSize": "16px", "marginTop": "10px"},
-                    ),
-                    dbc.Checklist(
-                        id="consent-keep-updated",
-                        options=[{"label": f" {t('ui.landing.consent_keep_updated', locale=locale)}", "value": "keep_updated"}],
-                        value=[],
-                        style={"fontSize": "16px", "marginTop": "10px"},
-                    ),
-                    html.Div(
-                        id="landing-error",
-                        style={"marginTop": "12px"},
-                    ),
-                    html.Button(
-                        t("ui.common.continue", locale=locale),
-                        id="landing-continue",
-                        className="ui green button",
-                        disabled=True,
-                        style={
-                            "marginTop": "14px",
-                            "width": "220px",
-                            "fontWeight": "700",
-                            "backgroundColor": "#cccccc",
-                            "color": "white",
-                            "cursor": "not-allowed",
-                        },
-                    ),
-                    html.Div(
-                        t("ui.landing.next_hint", locale=locale),
-                        style={"color": "#64748b", "marginTop": "10px", "fontSize": "14px"},
-                    ),
-                ]
-            ),
-            style={"borderRadius": "14px", "border": "1px solid rgba(15, 23, 42, 0.10)"},
-        )
-
         layout = dbc.Container(
             [
                 language_picker,
                 hero,
                 html.Div(style={"height": "18px"}),
-                dbc.Row(
-                    [
-                        dbc.Col(
-                            [
-                                study_info,
-                                html.Div(style={"height": "18px"}),
-                                consent_notice_card,
-                            ],
-                            md=6,
-                        ),
-                        dbc.Col(consent_card, md=6),
-                    ],
-                    className="g-4 align-items-stretch",
-                ),
+                study_info,
+                html.Div(style={"height": "18px"}),
+                consent_notice_card,
+                dcc.Store(id="consent-scroll-complete", data=False),
+                dcc.Interval(id="consent-scroll-poll", interval=500, n_intervals=0),
             ],
             fluid=False,
             style={"maxWidth": "1100px"},
@@ -382,19 +327,22 @@ class LandingPage(html.Div):
                 Output("landing-continue", "style"),
             ],
             [
+                Input("consent-scroll-complete", "data"),
                 Input("consent-acknowledge", "value"),
                 Input("consent-gdpr", "value"),
             ],
         )
         def update_continue_button(
+            scroll_complete: Optional[bool],
             acknowledge_value: Optional[list[str]],
             gdpr_value: Optional[list[str]],
         ) -> tuple[bool, dict[str, Any]]:
+            scrolled_to_end = bool(scroll_complete)
             acknowledged = bool(acknowledge_value and "ack" in acknowledge_value)
             gdpr_consented = bool(gdpr_value and "gdpr" in gdpr_value)
 
             base_style = {"marginTop": "14px", "width": "220px", "fontWeight": "700", "backgroundColor": "#1e88e5", "color": "white"}
-            if acknowledged and gdpr_consented:
+            if scrolled_to_end and acknowledged and gdpr_consented:
                 # blue button when enabled
                 return False, base_style
             else:
@@ -417,6 +365,7 @@ class LandingPage(html.Div):
             [
                 State("consent-acknowledge", "value"),
                 State("consent-gdpr", "value"),
+                State("consent-upload-own-data", "value"),
                 State("consent-play-only", "value"),
                 State("consent-receive-results", "value"),
                 State("consent-keep-updated", "value"),
@@ -429,6 +378,7 @@ class LandingPage(html.Div):
             n_clicks: Optional[int],
             acknowledge_value: Optional[list[str]],
             gdpr_value: Optional[list[str]],
+            upload_own_data_value: Optional[list[str]],
             play_only_value: Optional[list[str]],
             receive_results_value: Optional[list[str]],
             keep_updated_value: Optional[list[str]],
@@ -457,11 +407,13 @@ class LandingPage(html.Div):
             any_selected = bool(play_only_value) or bool(receive_results_value) or bool(keep_updated_value)
             no_selection = not any_selected
 
+            upload_own_data = bool(upload_own_data_value and "upload_own_data" in upload_own_data_value)
             play_only = bool(play_only_value and "play_only" in play_only_value)
             receive_results = bool(receive_results_value and "receive_results" in receive_results_value)
             keep_updated = bool(keep_updated_value and "keep_updated" in keep_updated_value)
 
             info["consent_gdpr"] = gdpr_consented
+            info["consent_upload_own_data"] = upload_own_data
             info["consent_play_only"] = play_only
             # If user didn't select anything, record that they did not consent to participate.
             info["consent_participate_in_study"] = (not play_only) and (not no_selection)
@@ -479,6 +431,7 @@ class LandingPage(html.Div):
                     "number": info.get("number", ""),
                     "timestamp": info["consent_timestamp"],
                     "gdpr_consent": gdpr_consented,
+                    "upload_own_data": upload_own_data,
                     "play_only": play_only,
                     "participate_in_study": info["consent_participate_in_study"],
                     "receive_results_later": receive_results,

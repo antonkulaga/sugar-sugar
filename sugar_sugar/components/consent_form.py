@@ -3,7 +3,8 @@ from __future__ import annotations
 import dash_bootstrap_components as dbc
 from dash import html
 
-from sugar_sugar.i18n import t, t_list
+from sugar_sugar.consent_notice_text import consent_notice_children
+from sugar_sugar.i18n import t
 
 
 class ConsentFormPage(html.Div):
@@ -28,42 +29,14 @@ class ConsentFormPage(html.Div):
                                 style={"borderRadius": "14px", "border": "1px solid rgba(15, 23, 42, 0.10)"},
                                 children=dbc.CardBody(
                                     [
-                                        html.H1(
-                                            t("ui.consent_form.title", locale=locale),
-                                            style={"fontSize": "34px", "fontWeight": "800", "color": "#0f172a"},
-                                        ),
                                         html.Div(
-                                            t("ui.consent_form.subtitle", locale=locale),
-                                            style={"color": "#334155", "lineHeight": "1.6", "marginBottom": "12px"},
-                                        ),
-                                        dbc.Alert(
-                                            t("ui.consent_form.adults_only", locale=locale),
-                                            color="warning",
-                                            style={"marginBottom": "14px"},
-                                        ),
-                                        html.H3(
-                                            t("ui.consent_form.summary_title", locale=locale),
-                                            style={"fontSize": "20px", "fontWeight": "800", "color": "#0f172a"},
-                                        ),
-                                        html.Ul(
-                                            [html.Li(item) for item in t_list("ui.consent_form.summary_bullets", locale=locale)],
-                                            style={"color": "#334155", "lineHeight": "1.6"},
-                                        ),
-                                        html.H3(
-                                            t("ui.consent_form.data_title", locale=locale),
-                                            style={"fontSize": "20px", "fontWeight": "800", "color": "#0f172a"},
-                                        ),
-                                        html.Ul(
-                                            [html.Li(item) for item in t_list("ui.consent_form.data_bullets", locale=locale)],
-                                            style={"color": "#334155", "lineHeight": "1.6"},
-                                        ),
-                                        html.H3(
-                                            t("ui.consent_form.withdraw_title", locale=locale),
-                                            style={"fontSize": "20px", "fontWeight": "800", "color": "#0f172a"},
-                                        ),
-                                        html.Div(
-                                            t("ui.consent_form.withdraw_text", locale=locale),
-                                            style={"color": "#334155", "lineHeight": "1.6"},
+                                            consent_notice_children(locale),
+                                            style={
+                                                "maxHeight": "calc(100vh - 240px)",
+                                                "overflowY": "auto",
+                                                "paddingRight": "10px",
+                                            },
+                                            id="consent-form-scroll",
                                         ),
                                         html.Hr(style={"margin": "18px 0"}),
                                         html.A(
@@ -71,7 +44,7 @@ class ConsentFormPage(html.Div):
                                             href="/",
                                             className="ui basic secondary button",
                                             style={"fontWeight": "800", "marginBottom": "14px"},
-                                        )
+                                        ),
                                     ]
                                 ),
                             )

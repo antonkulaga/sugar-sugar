@@ -21,6 +21,10 @@ ro:
     ro: "Română"
 
   landing:
+    patient_consent_form_title: "Formular de consimțământ (participant)"
+    required_consents_title: "Consimțăminte obligatorii"
+    optional_consents_title: "Consimțăminte opționale"
+    consent_upload_own_data: "Sunt de acord să încarc propriile date CGM pentru sarcinile opționale."
     tagline: "Un joc care îți testează superputerile de a prezice glucoza."
     how_it_works: "Cum funcționează"
     how_it_works_steps:
@@ -36,7 +40,7 @@ ro:
     consent_play_only: "Vreau doar să joc (nu stocați datele mele CGM / de joc)"
     consent_receive_results: "Vreau să primesc rezultatele mai târziu"
     consent_keep_updated: "Țineți-mă la curent cu actualizările proiectului"
-    consent_acknowledge_label: "Am 18+ ani și am citit formularul de consimțământ."
+    consent_acknowledge_label: "Am 18+ ani și am citit termenii și condițiile / informațiile pentru participanți."
     consent_gdpr_label: "Sunt de acord cu prelucrarea datelor mele cu caracter personal pentru scopurile menționate în nota de consimțământ, în conformitate cu Regulamentul general privind protecția datelor (UE) 2016/679. Înțeleg că datele mele vor fi gestionate în siguranță, nu vor fi partajate cu terți neautorizați și că îmi pot retrage consimțământul în orice moment."
     open_consent_form: "Deschide formularul de consimțământ"
     consent_required_error: "Te rugăm să confirmi că ai 18+ ani și ai citit formularul de consimțământ pentru a continua."
@@ -45,6 +49,7 @@ ro:
   about:
     title: "Despre Sugar Sugar"
     body: "Sugar Sugar este un instrument de cercetare creat pentru a măsura cât de precis pot oamenii să prevadă tendințele viitoare ale glucozei. Participarea ta ne ajută să înțelegem intuiția umană și să îmbunătățim modelele de predicție."
+    study_design_title: "Designul studiului"
 
   contact:
     title: "Contact"
