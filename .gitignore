@@ -182,4 +182,4 @@ prediction_ranking_A.csv
 prediction_ranking_B.csv
 prediction_ranking_C.csv
 
-/logs/*
+logs/*

@@ -1,9 +1,14 @@
 import os
-from typing import Optional, Tuple
+from typing import Union
 
 
-def _env_bool(name: str, default: str) -> bool:
-    return os.getenv(name, default).lower() in ("1", "true", "yes")
+def _env_bool(name: str, default: Union[str, bool]) -> bool:
+    if isinstance(default, str):
+        return os.getenv(name, default).lower() in ("1", "true", "yes")
+    raw = os.getenv(name)
+    if raw is None:
+        return default
+    return raw.lower() in ("1", "true", "yes")
 
 
 # Add this near the top with other type aliases
