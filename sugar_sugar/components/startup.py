@@ -78,6 +78,8 @@ class StartupPage(html.Div):
                         id='email-input',
                         type='email',
                         placeholder=t("ui.startup.email_placeholder", locale=locale),
+                        persistence=True,
+                        persistence_type='session',
                         style={'width': '100%', 'padding': '10px', 'fontSize': '20px', 'marginBottom': '20px'}
                     ),
                     
@@ -91,6 +93,8 @@ class StartupPage(html.Div):
                         placeholder=t("ui.startup.age_placeholder", locale=locale),
                         min=0,
                         max=120,
+                        persistence=True,
+                        persistence_type='session',
                         style={'width': '100%', 'padding': '10px', 'fontSize': '20px', 'marginBottom': '20px'}
                     ),
                     html.Div(
@@ -111,6 +115,8 @@ class StartupPage(html.Div):
                             {'label': t("ui.startup.gender_na", locale=locale), 'value': 'N/A'}
                         ],
                         placeholder=t("ui.startup.gender_placeholder", locale=locale),
+                        persistence=True,
+                        persistence_type='session',
                         style={'fontSize': '20px', 'marginBottom': '20px'}
                     ),
 
@@ -122,6 +128,8 @@ class StartupPage(html.Div):
                             {'label': t("ui.startup.no", locale=locale), 'value': False}
                         ],
                         placeholder=t("ui.startup.cgm_placeholder", locale=locale),
+                        persistence=True,
+                        persistence_type='session',
                         style={'fontSize': '20px', 'marginBottom': '20px'}
                     ),
 
@@ -133,6 +141,8 @@ class StartupPage(html.Div):
                             placeholder=t("ui.startup.cgm_duration_placeholder", locale=locale),
                             min=0,
                             max=100,
+                            persistence=True,
+                            persistence_type='session',
                             style={'width': '100%', 'padding': '10px', 'fontSize': '20px', 'marginBottom': '20px'}
                         )
                     ]),
@@ -150,6 +160,8 @@ class StartupPage(html.Div):
                                 {'label': t("ui.startup.format_c_label", locale=locale), 'value': 'C', 'disabled': True},
                             ],
                             placeholder=t("ui.startup.format_placeholder", locale=locale),
+                            persistence=True,
+                            persistence_type='session',
                             style={'fontSize': '20px', 'marginBottom': '10px'}
                         ),
                         html.Div(
@@ -169,6 +181,8 @@ class StartupPage(html.Div):
                                     id='data-usage-consent',
                                     options=[{'label': t("ui.startup.data_usage_consent_label", locale=locale), 'value': 'agree'}],
                                     value=[],
+                                    persistence=True,
+                                    persistence_type='session',
                                     style={'fontSize': '16px'}
                                 ),
                                 html.Div(id='data-usage-error', style={'marginTop': '8px', 'color': '#d32f2f', 'fontSize': '16px'})
@@ -188,6 +202,8 @@ class StartupPage(html.Div):
                             {'label': t("ui.startup.no", locale=locale), 'value': False}
                         ],
                         placeholder=t("ui.startup.diabetic_placeholder", locale=locale),
+                        persistence=True,
+                        persistence_type='session',
                         style={'fontSize': '20px', 'marginBottom': '20px'}
                     ),
                     
@@ -204,6 +220,8 @@ class StartupPage(html.Div):
                                 {'label': t("ui.startup.gender_na", locale=locale), 'value': 'N/A'}
                             ],
                             placeholder=t("ui.startup.diabetes_type_placeholder", locale=locale),
+                            persistence=True,
+                            persistence_type='session',
                             style={'fontSize': '20px', 'marginBottom': '20px'}
                         ),
                         
@@ -217,6 +235,8 @@ class StartupPage(html.Div):
                             placeholder=t("ui.startup.diabetes_duration_placeholder", locale=locale),
                             min=0,
                             max=100,
+                            persistence=True,
+                            persistence_type='session',
                             style={'width': '100%', 'padding': '10px', 'fontSize': '20px', 'marginBottom': '20px'}
                         )
                     ]),
@@ -229,6 +249,8 @@ class StartupPage(html.Div):
                         id='location-input',
                         type='text',
                         placeholder=t("ui.startup.location_placeholder", locale=locale),
+                        persistence=True,
+                        persistence_type='session',
                         style={'width': '100%', 'padding': '10px', 'fontSize': '20px', 'marginBottom': '20px'}
                     ),
                     
@@ -368,15 +390,15 @@ class StartupPage(html.Div):
             is_diabetic: Optional[bool],
             test_clicks: Optional[int],
             email: Optional[str]
-        ) -> tuple[dict[str, str], Optional[str], Optional[int]]:
+        ) -> tuple[dict[str, str], Any, Any]:
             if is_diabetic is None:
-                return {'display': 'none'}, None, None
+                return {'display': 'none'}, dash.no_update, dash.no_update
             elif is_diabetic:
                 # Check if this is from the test button (email will be test email)
                 if test_clicks and email and 'test.user@example.com' in str(email):
                     return {'display': 'block'}, 'Type 1', 5
                 else:
-                    return {'display': 'block'}, None, None
+                    return {'display': 'block'}, dash.no_update, dash.no_update
             else:
                 return {'display': 'none'}, 'N/A', 0
 
@@ -391,12 +413,12 @@ class StartupPage(html.Div):
             uses_cgm: Optional[bool],
             test_clicks: Optional[int],
             email: Optional[str],
-        ) -> tuple[dict[str, str], Optional[float]]:
+        ) -> tuple[dict[str, str], Any]:
             if uses_cgm is True:
                 if test_clicks and email and 'test.user@example.com' in str(email):
                     return {'display': 'block'}, 3
-                return {'display': 'block'}, None
-            return {'display': 'none'}, None
+                return {'display': 'block'}, dash.no_update
+            return {'display': 'none'}, dash.no_update
 
         @app.callback(
             [Output('start-button', 'disabled'),
