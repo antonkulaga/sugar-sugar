@@ -43,7 +43,17 @@ from sugar_sugar.i18n import setup_i18n, normalize_locale, t
 setup_i18n()
 
 from sugar_sugar.data import load_glucose_data
-from sugar_sugar.config import DEFAULT_POINTS, MIN_POINTS, MAX_POINTS, DOUBLE_CLICK_THRESHOLD, PREDICTION_HOUR_OFFSET
+from sugar_sugar.config import (
+    DEFAULT_POINTS,
+    MIN_POINTS,
+    MAX_POINTS,
+    DOUBLE_CLICK_THRESHOLD,
+    PREDICTION_HOUR_OFFSET,
+    DASH_DEBUG,
+    DASH_HOST,
+    DASH_PORT,
+    DEBUG_MODE,
+)
 from sugar_sugar.components.glucose import GlucoseChart
 from sugar_sugar.components.metrics import MetricsComponent
 from sugar_sugar.components.predictions import PredictionTableComponent
@@ -3291,18 +3301,20 @@ def main(
     port: Optional[int] = typer.Option(None, "--port", help="Port to run the server on")
 ) -> None:
     """Starts the Dash server."""
-    # Import config here to update the global DEBUG_MODE variable
-    import sugar_sugar.config as config
-    
-    # Get configuration from environment variables with fallbacks
-    dash_host = host or os.getenv('DASH_HOST', '127.0.0.1')
-    dash_port = port or int(os.getenv('DASH_PORT', '8050'))
-    dash_debug = debug if debug is not None else os.getenv('DASH_DEBUG', 'True').lower() == 'true'
-    
-    # Set the global debug mode based on command line argument or environment
-    config.DEBUG_MODE = debug if debug is not None else os.getenv('DEBUG_MODE', 'True').lower() == 'true'
-    
-    # Create components after setting debug mode
+    """
+    Environment defaults come from ``DASH_*`` and ``DEBUG_MODE``. When ``cli_debug``
+
+    is set (Typer ``--debug`` / ``--no-debug``), Dash debug matches it and
+    ``DEBUG_MODE`` is updated the same way.
+    """
+    global DEBUG_MODE
+    dash_host = DASH_HOST if host is None else (host or DASH_HOST)
+    dash_port = DASH_PORT if port is None else port
+    dash_debug = DASH_DEBUG if debug is None else debug
+    if debug is not None:
+        DEBUG_MODE = debug
+
+    # Create components after setting debug mode (when CLI passed --debug)
     global startup_page
     global landing_page
     landing_page = LandingPage()
