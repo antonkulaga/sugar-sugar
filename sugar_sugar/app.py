@@ -64,7 +64,7 @@ from sugar_sugar.components.consent_form import ConsentFormPage
 from sugar_sugar.components.submit import SubmitComponent
 from sugar_sugar.components.header import HeaderComponent
 from sugar_sugar.components.ending import EndingPage
-from sugar_sugar.components.navbar import NavBar, get_navbar_back_href
+from sugar_sugar.components.navbar import NavBar
 from sugar_sugar.generic_sources_metadata import load_generic_sources_metadata
 from sugar_sugar.contact_info import load_contact_info
 
@@ -249,10 +249,10 @@ app.layout = html.Div([
     html.Div(id='scroll-to-top-trigger', style={'display': 'none'}),
 
     # Navigation bar (top of page)
-    html.Div(id='navbar-container', children=[]),
+    html.Div(id='navbar-container', children=[], disable_n_clicks=True),
     
     # Main content area
-    html.Div(id='page-content', children=[])  # Will be populated in main()
+    html.Div(id='page-content', children=[], disable_n_clicks=True)
 ])
 
 
@@ -374,6 +374,17 @@ def display_page(
     glucose_unit: Optional[str],
     user_agent: Optional[str],
 ) -> tuple[html.Div, Optional[html.Div], html.Div]:
+    triggered = ctx.triggered_id
+    has_ptd = bool(user_info and 'prediction_table_data' in user_info) if user_info else False
+    has_full = bool(full_df_data)
+    print(f"DEBUG display_page: triggered={triggered} pathname={pathname} has_user_info={user_info is not None} has_prediction_table_data={has_ptd} has_full_df={has_full} ctx.triggered={ctx.triggered}")
+    # Language buttons only exist on the landing page. If `interface-language`
+    # fires on /ending or /final it is a spurious session-store re-sync that
+    # would re-render the page while State values may be stale, producing a
+    # truncated layout.
+    if triggered == 'interface-language' and pathname in ('/ending', '/final'):
+        raise PreventUpdate
+
     locale = normalize_locale(interface_language)
     navbar = NavBar(locale=locale, current_page=pathname or "/")
     
@@ -437,18 +448,6 @@ def display_page(
             return create_demo_page(locale=locale), warning_content, navbar
         # Default route: landing page
         return (LandingPage(locale=locale), warning_content, create_landing_navbar(locale=locale))
-
-@app.callback(
-    Output('url', 'pathname', allow_duplicate=True),
-    Input('navbar-back-link', 'href'),
-    State('url', 'pathname'),
-    prevent_initial_call=True
-)
-def handle_back_button(back_href: str, current_pathname: Optional[str]) -> str:
-    """Handle the back button navigation."""
-    if back_href and back_href != "#":
-        return get_navbar_back_href(current_pathname)
-    return no_update
 
 def create_landing_navbar(*, locale: str) -> html.Div:
     """Create a minimal navbar for the landing page with only About and Contact buttons."""
@@ -1079,6 +1078,7 @@ def create_ending_layout(
                 html.P(t("ui.results_disclaimer.line2", locale=locale), style={'margin': '0'}),
                 html.P(t("ui.results_disclaimer.line3", locale=locale), style={'margin': '0'}),
             ],
+            disable_n_clicks=True,
             style={
                 'maxWidth': '900px',
                 'margin': '0 auto 15px auto',
@@ -1094,6 +1094,7 @@ def create_ending_layout(
         ),
         html.Div(
             t("ui.common.round_of", locale=locale, current=current_round_number, total=max_rounds),
+            disable_n_clicks=True,
             style={
                 'textAlign': 'center',
                 'marginBottom': '15px',
@@ -1104,6 +1105,7 @@ def create_ending_layout(
         ),
         html.Div(
             t("ui.ending.units_line", locale=locale, unit=unit),
+            disable_n_clicks=True,
             style={
                 'textAlign': 'center',
                 'marginBottom': '15px',
@@ -1145,9 +1147,10 @@ def create_ending_layout(
                         'editable': False,
                     },
                     style={'height': '400px'},
-                )
+                ),
+                disable_n_clicks=True,
             )
-        ], style={
+        ], disable_n_clicks=True, style={
             'marginBottom': '20px',
             'padding': 'clamp(10px, 2vw, 20px)',
             'backgroundColor': 'white',
@@ -1162,15 +1165,18 @@ def create_ending_layout(
             html.H3(t("ui.ending.prediction_results", locale=locale), style={
                 'textAlign': 'center', 
                 'marginBottom': '15px',
-                'fontSize': 'clamp(18px, 3vw, 24px)'  # Responsive font size
+                'fontSize': 'clamp(18px, 3vw, 24px)'
             }),
-            # Create prediction table directly from stored data
             dash_table.DataTable(
+                id='ending-prediction-table',
                 data=prediction_table_data_display,
                 columns=[{'name': t("ui.table.metric_header", locale=locale), 'id': 'metric'}] + [
                     {'name': f'T{i}', 'id': f't{i}', 'type': 'text'} 
                     for i in range(len(prediction_table_data[0]) - 1) if prediction_table_data
                 ],
+                cell_selectable=False,
+                row_selectable=False,
+                editable=False,
                 style_table={
                     'width': '100%',
                     'height': 'auto',
@@ -1210,12 +1216,11 @@ def create_ending_layout(
             'flexDirection': 'column',
             'width': '100%',
             'boxSizing': 'border-box',
-            'overflowX': 'auto'  # Allow horizontal scroll for table if needed
+            'overflowX': 'auto'
         }),
-        
-        # Metrics section - now directly calculated and displayed
         html.Div(
             metrics_display,
+            disable_n_clicks=True,
             style={
                 'padding': 'clamp(10px, 2vw, 20px)',
                 'backgroundColor': 'white',
@@ -1227,7 +1232,6 @@ def create_ending_layout(
             }
         ),
         
-        # Buttons section
         html.Div([
             html.Button(
                 t("ui.ending.next_round", locale=locale),
@@ -1249,7 +1253,8 @@ def create_ending_layout(
                     'display': 'flex',
                     'alignItems': 'center',
                     'justifyContent': 'center',
-                    'lineHeight': '1.2'
+                    'lineHeight': '1.2',
+                    'margin': '0 clamp(5px, 1vw, 10px)',
                 }
             ),
             html.Button(
@@ -1271,16 +1276,16 @@ def create_ending_layout(
                     'display': 'flex',
                     'alignItems': 'center',
                     'justifyContent': 'center',
-                    'lineHeight': '1.2'
+                    'lineHeight': '1.2',
+                    'margin': '0 clamp(5px, 1vw, 10px)',
                 }
             ),
-        ], style={
+        ], disable_n_clicks=True, style={
             'display': 'flex',
             'justifyContent': 'center',
-            'alignItems': 'center',
-            'gap': 'clamp(10px, 2vw, 20px)',
+            'alignItems': 'stretch',
             'marginTop': '20px',
-            'padding': '0 10px'
+            'padding': '0 10px',
         }),
         html.Div(
             [
@@ -1343,6 +1348,7 @@ def create_ending_layout(
                     style={'display': 'flex', 'justifyContent': 'center', 'gap': '12px', 'flexWrap': 'wrap'},
                 ),
             ],
+            disable_n_clicks=True,
             style={
                 'marginTop': '10px',
                 'padding': 'clamp(10px, 2vw, 20px)',
@@ -1354,15 +1360,15 @@ def create_ending_layout(
                 'display': 'block' if (is_last_round and switch_targets) else 'none',
             },
         ),
-    ], style={
-        'maxWidth': '100%',  # Allow full width usage
+    ], disable_n_clicks=True, style={
+        'maxWidth': '100%',
         'width': '100%',
         'margin': '0 auto',
-        'padding': 'clamp(10px, 2vw, 20px)',  # Responsive padding
+        'padding': 'clamp(10px, 2vw, 20px)',
         'display': 'flex',
         'flexDirection': 'column',
         'minHeight': '100vh',
-        'gap': 'clamp(10px, 2vh, 20px)',  # Responsive gap
+        'gap': 'clamp(10px, 2vh, 20px)',
         'boxSizing': 'border-box'
     })
 
@@ -1607,6 +1613,7 @@ def create_final_layout(full_df_data: Optional[Dict], user_info: Dict[str, Any],
                 html.P(t("ui.results_disclaimer.line2", locale=locale), style={'margin': '0'}),
                 html.P(t("ui.results_disclaimer.line3", locale=locale), style={'margin': '0'}),
             ],
+            disable_n_clicks=True,
             style={
                 'maxWidth': '900px',
                 'margin': '0 auto 15px auto',
@@ -1622,6 +1629,7 @@ def create_final_layout(full_df_data: Optional[Dict], user_info: Dict[str, Any],
         ),
         html.Div(
             t("ui.final.rounds_played", locale=locale, played=len(rounds), total=max_rounds),
+            disable_n_clicks=True,
             style={
                 'textAlign': 'center',
                 'marginBottom': '20px',
@@ -1635,6 +1643,7 @@ def create_final_layout(full_df_data: Optional[Dict], user_info: Dict[str, Any],
                 html.H3(t("ui.final.ranking_title", locale=locale), style={'textAlign': 'center', 'marginBottom': '10px'}),
                 html.Ul([html.Li(line) for line in ranking_lines], style={'margin': '0 auto', 'maxWidth': '760px'}),
             ],
+            disable_n_clicks=True,
             style={
                 'marginBottom': '15px',
                 'color': '#4a5568',
@@ -1656,6 +1665,7 @@ def create_final_layout(full_df_data: Optional[Dict], user_info: Dict[str, Any],
                 if played_formats
                 else ""
             ),
+            disable_n_clicks=True,
             style={
                 'textAlign': 'center',
                 'marginBottom': '12px',
@@ -1666,6 +1676,7 @@ def create_final_layout(full_df_data: Optional[Dict], user_info: Dict[str, Any],
         ),
         html.Div(
             overall_metrics_display,
+            disable_n_clicks=True,
             style={
                 'padding': 'clamp(10px, 2vw, 20px)',
                 'backgroundColor': 'white',
@@ -1692,6 +1703,7 @@ def create_final_layout(full_df_data: Optional[Dict], user_info: Dict[str, Any],
                 }
             ),
             dash_table.DataTable(
+                id='final-rounds-table',
                 data=round_rows,
                 columns=[
                     {'name': 'Round', 'id': 'Round', 'type': 'numeric'},
@@ -1701,6 +1713,9 @@ def create_final_layout(full_df_data: Optional[Dict], user_info: Dict[str, Any],
                     {'name': 'RMSE', 'id': 'RMSE', 'type': 'numeric', 'format': Format(precision=2, scheme=Scheme.fixed)},
                     {'name': 'MAPE', 'id': 'MAPE', 'type': 'numeric', 'format': Format(precision=2, scheme=Scheme.fixed)},
                 ],
+                cell_selectable=False,
+                row_selectable=False,
+                editable=False,
                 style_table={
                     'width': '100%',
                     'overflowX': 'auto'
@@ -1716,7 +1731,7 @@ def create_final_layout(full_df_data: Optional[Dict], user_info: Dict[str, Any],
                     'fontWeight': 'bold'
                 }
             )
-        ], style={
+        ], disable_n_clicks=True, style={
             'marginBottom': '20px',
             'padding': 'clamp(10px, 2vw, 20px)',
             'backgroundColor': 'white',
@@ -1783,9 +1798,11 @@ def create_final_layout(full_df_data: Optional[Dict], user_info: Dict[str, Any],
                             },
                         ),
                     ],
+                    disable_n_clicks=True,
                     style={'display': 'flex', 'justifyContent': 'center', 'gap': '12px', 'flexWrap': 'wrap'},
                 ),
             ],
+            disable_n_clicks=True,
             style={
                 'marginBottom': '20px',
                 'padding': 'clamp(10px, 2vw, 20px)',
@@ -1820,14 +1837,14 @@ def create_final_layout(full_df_data: Optional[Dict], user_info: Dict[str, Any],
                     'lineHeight': '1.2'
                 }
             )
-        ], style={
+        ], disable_n_clicks=True, style={
             'display': 'flex',
             'justifyContent': 'center',
             'alignItems': 'center',
             'marginTop': '20px',
             'padding': '0 10px'
         })
-    ], style={
+    ], disable_n_clicks=True, style={
         'maxWidth': '100%',
         'width': '100%',
         'margin': '0 auto',
@@ -2017,6 +2034,7 @@ def handle_submit_button(
     slider_value: Optional[int],
 ) -> Tuple[str, Optional[Dict[str, Any]], Dict[str, bool], Dict[str, List[Any]]]:
     """Handle submit button on prediction page"""
+    print(f"DEBUG handle_submit_button FIRED: n_clicks={n_clicks}")
     # NOTE: Dash can re-trigger callbacks when components are re-mounted across pages.
     # Guard so we only process a *new* submit for the current round.
     if not n_clicks:
@@ -2125,6 +2143,7 @@ def handle_next_round_button(
     user_info: Optional[Dict[str, Any]],
     full_df_data: Optional[Dict]
 ) -> Tuple[str, Dict[str, Any], Dict[str, bool], Dict[str, List[Any]], Dict[str, List[Any]], Dict[str, List[Any]], bool, str, bool, int]:
+    print(f"DEBUG handle_next_round_button FIRED: n_clicks={n_clicks}")
     if not n_clicks or not user_info:
         return no_update, no_update, no_update, no_update, no_update, no_update, no_update, no_update, no_update, no_update
 
@@ -2208,6 +2227,7 @@ def handle_finish_study_from_prediction(
     user_info: Optional[Dict[str, Any]],
     full_df_data: Optional[Dict]
 ) -> Tuple[str, Optional[Dict[str, Any]], Dict[str, bool]]:
+    print(f"DEBUG handle_finish_study_from_prediction FIRED: n_clicks={n_clicks}")
     if not n_clicks:
         return no_update, no_update, no_update
 
@@ -2245,6 +2265,7 @@ def handle_finish_study_from_ending(
     user_info: Optional[Dict[str, Any]],
     full_df_data: Optional[Dict]
 ) -> Tuple[str, Optional[Dict[str, Any]], Dict[str, bool]]:
+    print(f"DEBUG handle_finish_study_from_ending FIRED: n_clicks={n_clicks}")
     if not n_clicks:
         return no_update, no_update, no_update
 
@@ -2292,6 +2313,7 @@ def handle_back_to_final_from_upload(n_clicks: Optional[int]) -> Tuple[str, Dict
 )
 def handle_restart_button(n_clicks: Optional[int]) -> Tuple[str, None, Dict[str, bool], bool, str, str]:
     """Handle restart button - navigate to start and clear user info. Data reset handled elsewhere."""
+    print(f"DEBUG handle_restart_button FIRED: n_clicks={n_clicks}")
     if n_clicks:
         with start_action(action_type=u"handle_restart_button") as action:
             action.log(message_type="restart_clicked")
@@ -2347,11 +2369,11 @@ def handle_switch_format(
     int,
     Optional[Any],
 ]:
+    print(f"DEBUG handle_switch_format FIRED: n_a={n_a} n_b={n_b} n_c={n_c} triggered={ctx.triggered_id}")
     triggered = ctx.triggered_id
     if triggered not in ('switch-format-a', 'switch-format-b', 'switch-format-c'):
         raise PreventUpdate
 
-    # Guard against spurious fires when buttons are first added to DOM (n_clicks=0 in Dash 3.x)
     triggered_nclicks = {'switch-format-a': n_a, 'switch-format-b': n_b, 'switch-format-c': n_c}[triggered]
     if not triggered_nclicks:
         raise PreventUpdate
