@@ -2,8 +2,9 @@ import plotly.graph_objs as go
 import polars as pl
 from typing import Any, Optional
 from datetime import datetime
-from dash import dcc, Output, Input
+from dash import dcc, Output, Input, State
 from dash import Dash, html
+from dash.exceptions import PreventUpdate
 from eliot import start_action
 from sugar_sugar.config import PREDICTION_HOUR_OFFSET
 from sugar_sugar.i18n import normalize_locale, t
@@ -77,19 +78,22 @@ class GlucoseChart(html.Div):
              Output(f'{self.id}-source-store', 'data')],
             [Input('current-window-df', 'data'),
              Input('events-df', 'data'),
-             Input('data-source-name', 'data')]
+             Input('data-source-name', 'data')],
+            [State('url', 'pathname')]
         )
         def store_chart_data(
             df_data: Optional[dict[str, Any]],
             events_data: Optional[dict[str, Any]],
-            source_name: Optional[str]
+            source_name: Optional[str],
+            pathname: Optional[str],
         ) -> tuple[Optional[dict[str, Any]], Optional[dict[str, Any]], Optional[str]]:
             """Store the current DataFrame and events data when they change"""
+            if pathname != '/prediction':
+                raise PreventUpdate
             with start_action(
                 action_type=u"glucose_store_chart_data",
                 source=source_name
             ):
-                # Just pass through the session storage data
                 return df_data, events_data, source_name
 
         @app.callback(
@@ -99,7 +103,8 @@ class GlucoseChart(html.Div):
              Input(f'{self.id}-source-store', 'data'),
              Input('glucose-chart-mode', 'data'),
              Input('glucose-unit', 'data'),
-             Input('interface-language', 'data')]
+             Input('interface-language', 'data')],
+            [State('url', 'pathname')]
         )
         def update_chart_figure(
             df_data: Optional[dict[str, Any]],
@@ -108,8 +113,11 @@ class GlucoseChart(html.Div):
             mode_data: Optional[dict[str, Any]],
             glucose_unit: Optional[str],
             interface_language: Optional[str],
+            pathname: Optional[str],
         ) -> go.Figure:
             """Update the chart figure when data changes"""
+            if pathname != '/prediction':
+                raise PreventUpdate
             if not df_data:
                 return self._create_empty_figure()
             locale = normalize_locale(interface_language)
