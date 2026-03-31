@@ -558,8 +558,7 @@ class SubmitComponent(html.Div):
             }
             
             if not df_data:
-                # No data, keep disabled with darker grey style
-                disabled_style = {**base_style, 'backgroundColor': '#555555', 'color': 'white', 'cursor': 'not-allowed'}
+                disabled_style = {**base_style, 'backgroundColor': '#cccccc', 'color': '#666666', 'cursor': 'not-allowed'}
                 label_style = {**base_label_style, 'color': '#6c757d'}
                 return True, disabled_style, t("ui.submit.progress_no_data", locale=locale), label_style
             
@@ -604,14 +603,12 @@ class SubmitComponent(html.Div):
                 print(f"DEBUG: first_point_is_snapped: {first_point_is_snapped}, user_predictions_count: {user_predictions_count}, required: {required_user_predictions}")
                 
                 if predictions_to_end:
-                    # Enable button - predictions reach the end
-                    enabled_style = {**base_style, 'backgroundColor': '#1e88e5', 'color': 'white', 'cursor': 'pointer'}
-                    label_style = {**base_label_style, 'color': '#1e88e5', 'fontWeight': 'bold'}
+                    enabled_style = {**base_style, 'backgroundColor': '#4CBB17', 'color': 'white', 'cursor': 'pointer'}
+                    label_style = {**base_label_style, 'color': '#3A9B12', 'fontWeight': 'bold'}
                     return False, enabled_style, t("ui.submit.progress_ready", locale=locale), label_style
                 else:
-                    # Some predictions but not to the end
-                    disabled_style = {**base_style, 'backgroundColor': '#ffc107', 'color': '#212529', 'cursor': 'not-allowed'}
-                    label_style = {**base_label_style, 'color': '#856404'}
+                    disabled_style = {**base_style, 'backgroundColor': '#999999', 'color': 'white', 'cursor': 'not-allowed'}
+                    label_style = {**base_label_style, 'color': '#6c757d'}
                     status_text = t(
                         "ui.submit.progress_some",
                         locale=locale,
@@ -620,8 +617,7 @@ class SubmitComponent(html.Div):
                     )
                     return True, disabled_style, status_text, label_style
             else:
-                # No predictions in hidden area
-                disabled_style = {**base_style, 'backgroundColor': '#555555', 'color': 'white', 'cursor': 'not-allowed'}
+                disabled_style = {**base_style, 'backgroundColor': '#cccccc', 'color': '#666666', 'cursor': 'not-allowed'}
                 label_style = {**base_label_style, 'color': '#6c757d'}
                 return True, disabled_style, t("ui.submit.progress_hidden_area", locale=locale), label_style
 

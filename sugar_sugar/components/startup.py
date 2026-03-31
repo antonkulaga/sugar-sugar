@@ -217,6 +217,8 @@ class StartupPage(html.Div):
                             options=[
                                 {'label': t("ui.startup.diabetes_type_1", locale=locale), 'value': 'Type 1'},
                                 {'label': t("ui.startup.diabetes_type_2", locale=locale), 'value': 'Type 2'},
+                                {'label': t("ui.startup.diabetes_type_gestational", locale=locale), 'value': 'Gestational'},
+                                {'label': t("ui.startup.diabetes_type_lada", locale=locale), 'value': 'LADA'},
                                 {'label': t("ui.startup.gender_na", locale=locale), 'value': 'N/A'}
                             ],
                             placeholder=t("ui.startup.diabetes_type_placeholder", locale=locale),
@@ -273,9 +275,9 @@ class StartupPage(html.Div):
                         html.Button(
                             t("ui.startup.just_test_me", locale=locale),
                             id='test-me-button',
-                            className="ui green button",
+                            className="ui blue-action button",
                             style={
-                                'backgroundColor': '#2196F3',
+                                'backgroundColor': '#1976D2',
                                 'color': 'white',
                                 'padding': '15px 25px',
                                 'border': 'none',
@@ -513,7 +515,7 @@ class StartupPage(html.Div):
             # Enable button only if all required fields are filled
             if all_required_filled:
                 button_style = {
-                    'backgroundColor': '#1e88e5',
+                    'backgroundColor': '#4CBB17',
                     'color': 'white',
                     'padding': '20px 30px',
                     'border': 'none',

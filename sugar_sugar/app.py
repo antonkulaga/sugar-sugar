@@ -110,32 +110,30 @@ def events_dataframe_to_store_dict(df_in: pl.DataFrame) -> Dict[str, List[Any]]:
     }
 
 
-def get_random_data_window(full_df: pl.DataFrame, points: int) -> Tuple[pl.DataFrame, int]:
+def get_random_data_window(
+    full_df: pl.DataFrame,
+    points: int,
+    used_starts: Optional[set[int]] = None,
+) -> Tuple[pl.DataFrame, int]:
     """
-    Get a random window of data from the full DataFrame.
-    
-    Args:
-        full_df: The full glucose DataFrame
-        points: Number of points to include in the window
-        
-    Returns:
-        Tuple of (windowed_df, random_start_index)
+    Get a random window of data from the full DataFrame, avoiding previously
+    used start positions when possible.
     """
     import random
     max_start_index = len(full_df) - points
     if max_start_index > 0:
-        # Generate random start position that is a multiple of the number of points
         max_multiple = max_start_index // points
-        if max_multiple > 0:
-            random_multiple = random.randint(0, max_multiple)
-            if random_multiple == 0 and max_multiple >= 1:
-                random_multiple = random.randint(1, max_multiple)
-            random_start = random_multiple * points
-        else:
-            random_start = 0
+        candidates = [m * points for m in range(max_multiple + 1)]
+        if used_starts:
+            remaining = [s for s in candidates if s not in used_starts]
+            if remaining:
+                candidates = remaining
+        if len(candidates) > 1 and 0 in candidates:
+            candidates = [c for c in candidates if c != 0] or candidates
+        random_start = random.choice(candidates)
     else:
         random_start = 0
-    
+
     windowed_df = full_df.slice(random_start, points)
     return windowed_df, random_start
 
@@ -546,28 +544,21 @@ def create_about_page(*, locale: str) -> html.Div:
     if study_md:
         children.extend(
             [
-                html.Hr(style={"margin": "18px 0"}),
-                dbc.Accordion(
-                    [
-                        dbc.AccordionItem(
-                            title=t("ui.about.study_design_title", locale=locale),
-                            children=html.Div(
-                                dcc.Markdown(study_md, link_target="_blank"),
-                                style={
-                                    "maxHeight": "70vh",
-                                    "overflowY": "auto",
-                                    "paddingRight": "10px",
-                                    "border": "1px solid rgba(15, 23, 42, 0.10)",
-                                    "borderRadius": "12px",
-                                    "padding": "12px 14px",
-                                    "background": "rgba(255,255,255,0.75)",
-                                },
-                            ),
-                            item_id="study-design",
-                        )
-                    ],
-                    active_item=[],
-                    always_open=False,
+                html.Hr(style={"margin": "24px 0"}),
+                html.H2(
+                    t("ui.about.study_design_title", locale=locale),
+                    style={"marginBottom": "16px"},
+                ),
+                html.Div(
+                    dcc.Markdown(study_md, link_target="_blank"),
+                    className="study-design-content",
+                    style={
+                        "overflowY": "auto",
+                        "border": "1px solid rgba(15, 23, 42, 0.10)",
+                        "borderRadius": "12px",
+                        "padding": "20px 24px",
+                        "background": "rgba(255,255,255,0.75)",
+                    },
                 ),
             ]
         )
@@ -1114,7 +1105,7 @@ def create_ending_layout(
             }
         ),
         
-        # Graph section - static figure built directly from the stored window (includes predictions)
+        # Graph section - full window with known + predicted lines
         html.Div([
             html.P(
                 t("ui.ending.graph_explanation", locale=locale),
@@ -1160,7 +1151,7 @@ def create_ending_layout(
             'boxSizing': 'border-box'
         }),
         
-        # Prediction table section with responsive flexbox layout
+        # Prediction table section - only columns with actual predictions
         html.Div([
             html.H3(t("ui.ending.prediction_results", locale=locale), style={
                 'textAlign': 'center', 
@@ -1171,8 +1162,10 @@ def create_ending_layout(
                 id='ending-prediction-table',
                 data=prediction_table_data_display,
                 columns=[{'name': t("ui.table.metric_header", locale=locale), 'id': 'metric'}] + [
-                    {'name': f'T{i}', 'id': f't{i}', 'type': 'text'} 
-                    for i in range(len(prediction_table_data[0]) - 1) if prediction_table_data
+                    {'name': f'T{i}', 'id': f't{i}', 'type': 'text'}
+                    for i in range(len(prediction_table_data[0]) - 1)
+                    if prediction_table_data
+                    and prediction_table_data[1].get(f't{i}', '-') != '-'
                 ],
                 cell_selectable=False,
                 row_selectable=False,
@@ -1234,18 +1227,17 @@ def create_ending_layout(
         
         html.Div([
             html.Button(
-                t("ui.ending.next_round", locale=locale),
-                id='next-round-button',
-                className="ui green button",
-                disabled=is_last_round,
+                t("ui.ending.view_complete_analysis", locale=locale) if is_last_round else t("ui.common.finish_exit", locale=locale),
+                id='finish-study-button-ending',
+                autoFocus=False,
                 style={
-                    'backgroundColor': '#007bff' if not is_last_round else '#cccccc',
-                    'color': 'white' if not is_last_round else '#666666',
+                    'backgroundColor': '#007bff',
+                    'color': 'white',
                     'padding': 'clamp(12px, 2vw, 16px) clamp(18px, 3vw, 26px)',
                     'border': 'none',
                     'borderRadius': '5px',
                     'fontSize': 'clamp(16px, 2.5vw, 22px)',
-                    'cursor': 'pointer' if not is_last_round else 'not-allowed',
+                    'cursor': 'pointer',
                     'minWidth': '200px',
                     'maxWidth': '400px',
                     'width': '100%',
@@ -1258,17 +1250,18 @@ def create_ending_layout(
                 }
             ),
             html.Button(
-                t("ui.ending.view_complete_analysis", locale=locale) if is_last_round else t("ui.common.finish_exit", locale=locale),
-                id='finish-study-button-ending',
-                autoFocus=False,
+                t("ui.ending.next_round", locale=locale),
+                id='next-round-button',
+                className="ui green button",
+                disabled=is_last_round,
                 style={
-                    'backgroundColor': '#007bff',
-                    'color': 'white',
+                    'backgroundColor': '#4CBB17' if not is_last_round else '#cccccc',
+                    'color': 'white' if not is_last_round else '#666666',
                     'padding': 'clamp(12px, 2vw, 16px) clamp(18px, 3vw, 26px)',
                     'border': 'none',
                     'borderRadius': '5px',
                     'fontSize': 'clamp(16px, 2.5vw, 22px)',
-                    'cursor': 'pointer',
+                    'cursor': 'pointer' if not is_last_round else 'not-allowed',
                     'minWidth': '200px',
                     'maxWidth': '400px',
                     'width': '100%',
@@ -2191,7 +2184,12 @@ def handle_next_round_button(
         # Reset any previous predictions before starting a fresh round.
         full_df = full_df.with_columns(pl.lit(0.0).alias("prediction"))
 
-        new_df, random_start = get_random_data_window(full_df, points)
+        used_starts: set[int] = {
+            int(r["prediction_window_start"])
+            for r in rounds
+            if r.get("prediction_window_start") is not None
+        }
+        new_df, random_start = get_random_data_window(full_df, points, used_starts=used_starts)
         new_df = new_df.with_columns(pl.lit(0.0).alias("prediction"))
 
         user_info['current_round_number'] = next_round_number

@@ -115,6 +115,8 @@ uk:
     diabetes_type_placeholder: "Обери тип діабету"
     diabetes_type_1: "Тип 1"
     diabetes_type_2: "Тип 2"
+    diabetes_type_gestational: "Гестаційний діабет"
+    diabetes_type_lada: "LADA (Латентний автоімунний діабет у дорослих)"
     diabetes_duration_label: "Тривалість діабету (роки)"
     diabetes_duration_placeholder: "Введи кількість років"
     location_label: "Локація"
