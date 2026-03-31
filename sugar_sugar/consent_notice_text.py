@@ -89,27 +89,20 @@ _CONSENT_NOTICE_TRANSLATIONS: Final[dict[str, list[str]]] = {
         "Below we would like to inform you comprehensively about what happens to your personal data within the study and how we handle it.",
         "1. Who is responsible for data processing and storage?",
         "University Medicine Rostock is responsible for data processing and storage within the study. HEALES operates the Sugar-Sugar application as a processor within the framework of a data processing agreement (DPA) with University Medicine Rostock. You can reach the responsible institution at the following contact details:",
-        "Responsible institution",
-        "University Medicine Rostock – legally capable sub-entity of the University of Rostock",
-        "Schillingallee 35",
-        "18057 Rostock",
+        "Responsible institution: University Medicine Rostock – legally capable sub-entity of the University of Rostock",
+        "Schillingallee 35, 18057 Rostock",
         "www.med.uni-rostock.de",
         "2. Who can you contact with questions about the study or data protection?",
         "To best safeguard your interests, you can also contact the following persons at any time with any questions about your participation in the study or the general procedure:",
-        "Study contacts",
-        "Anton Kulaga: anton.kulaga@uni-rostock.de",
-        "Livia Zaharia: livia.zaharia@uni-rostock.de",
+        "Study contacts:",
+        "• Anton Kulaga: anton.kulaga@uni-rostock.de",
+        "• Livia Zaharia: livia.zaharia@uni-rostock.de",
         "For data protection questions, the data protection officer of University Medicine Rostock is also available:",
-        "Data protection officer of University Medicine Rostock",
-        "The Data Protection Officer",
-        "Doberaner Str. 142",
-        "18057 Rostock",
+        "Doberaner Str. 142, 18057 Rostock",
         "0381 494 5155 | datenschutz@med.uni-rostock.de",
         "If you wish to exercise your right to complain about unlawful data processing, please contact the competent supervisory authority:",
-        "Competent data protection supervisory authority",
         "State Commissioner for Data Protection and Freedom of Information M-V",
-        "Schloss Schwerin, Lennéstr. 1",
-        "19053 Schwerin",
+        "Schloss Schwerin, Lennéstr. 1, 19053 Schwerin",
         "info@datenschutz-mv.de",
         "3. Which data do we need from you to conduct the study?",
         "The following data are collected within the study:",
@@ -135,9 +128,7 @@ _CONSENT_NOTICE_TRANSLATIONS: Final[dict[str, list[str]]] = {
         "Right of withdrawal",
         "In principle, you can withdraw your consent at any time without giving reasons. Please contact the study leadership (anton.kulaga@uni-rostock.de). Your withdrawal takes effect from the time you submit it. Processing of your data up to that point remains lawful. In the event of withdrawal, deletion of personal data will be initiated. Study data that have already been anonymized and can therefore no longer be linked to you will continue to be used within the study. The mapping file is expected to be destroyed 12 months after study completion; after that, an individual assignment and thus deletion are no longer possible.",
         "Legal basis: Art. 6(1)(a) GDPR and Art. 9(2)(a) GDPR.",
-        "Declaration of consent",
-        "for participation in the Sugar-Sugar glucose prediction study",
-        "and the associated data processing",
+        "Declaration of consent for participation in the Sugar-Sugar glucose prediction study and the associated data processing",
         "Study ID of the participating person: _________________________________ (assigned at registration)",
         "The following consents are recorded electronically at the time of registration by checking the corresponding boxes.",
         "I participate in the study voluntarily. I have carefully read the participant information for the study and the included data protection notice and the associated rights.",
@@ -403,10 +394,96 @@ def consent_notice_children(locale: Optional[str]) -> list[object]:
             else:
                 md_text = consent_notice_markdown_de()
 
+    # Style subtitles by exact-line matching (avoid partial replacements like "Data protection officer...").
+    replacements = {
+        "en": {
+            "Participant information": "### Participant information",
+            "Data protection": "### Data protection",
+            "Right of withdrawal": "### Right of withdrawal",
+        },
+        "uk": {
+            "Інформація для учасників": "### Інформація для учасників",
+            "Захист даних": "### Захист даних",
+            "Право на відкликання": "### Право на відкликання",
+        },
+        "ro": {
+            "Informații pentru participanți": "### Informații pentru participanți",
+            "Protecția datelor": "### Protecția datelor",
+            "Dreptul de retragere": "### Dreptul de retragere",
+        },
+        "de": {
+            "**Teilnehmerinformation**": "### Teilnehmerinformation",
+            "## Datenschutz": "### Datenschutz",
+            "## Widerrufsrecht": "### Widerrufsrecht",
+        },
+    }
+    if loc in replacements:
+        for old, new in replacements[loc].items():
+            escaped_old = re.escape(old)
+            md_text = re.sub(rf"(?m)^{escaped_old}\s*$", new, md_text)
+
+    # Remove accidental heading styling from data protection officer line(s).
+    officer_lines = [
+        "Data protection officer of University Medicine Rostock",
+        "Datenschutzbeauftragter der Universitätsmedizin Rostock",
+        "Уповноважений із захисту даних Університетської медицини Ростока",
+    ]
+    for line in officer_lines:
+        md_text = re.sub(rf"(?m)^###\s*{re.escape(line)}\s*$", line, md_text)
+
+    # Make numbered lines bold
+    md_text = re.sub(r"(\d+)\. ", r"**\1.** ", md_text)
+
+    # Indent text after numbered lines until the next numbered line or heading.
+    paragraphs = md_text.split("\n\n")
+    out_text = ""
+    first = True
+    indent = False
+    after_numbered = False
+
+    for p in paragraphs:
+        stripped = p.strip()
+        is_heading = stripped.startswith("###")
+        is_numbered = re.match(r"\*\*\d+\.\*\*", stripped)
+
+        if is_heading:
+            if not first:
+                out_text += "\n\n"
+            out_text += p
+            first = False
+            indent = False
+            after_numbered = False
+            continue
+
+        if is_numbered:
+            if not first:
+                out_text += "\n\n"
+            out_text += p
+            first = False
+            indent = True
+            after_numbered = True
+            continue
+
+        if indent:
+            # No blank line under numbered bullets; daughter paragraphs are indented directly.
+            out_text += "\n" + f'<div style="margin-left: 20px;">{p}</div>'
+            after_numbered = False
+            continue
+
+        # Standard paragraph spacing
+        if not first:
+            out_text += "\n\n"
+        out_text += p
+        first = False
+        after_numbered = False
+
+    md_text = out_text
+
     return [
         dcc.Markdown(
             md_text,
             link_target="_blank",
+            dangerously_allow_html=True,
             style={"color": "#334155", "lineHeight": "1.6"},
         )
     ]
