@@ -5,23 +5,24 @@ from sugar_sugar.i18n import t
 
 
 def test_navbar_contains_home_button_and_back(monkeypatch):
-    # use a known page to verify back mapping
     current = "/prediction"
     navbar = NavBar(locale="en", current_page=current)
     children = navbar.children
-    # should have four elements: back, home, title, spacer
-    assert len(children) == 4
+    # back, home, about, contact, demo
+    assert len(children) == 5
 
-    back_btn, home_btn, title_div, spacer = children
-    # verify back button properties
+    back_btn, home_btn, about_btn, contact_btn, demo_btn = children
+
+    # back button navigates to the correct previous page
     assert back_btn.href == get_navbar_back_href(current)
-    assert "Back" in back_btn.children or t("ui.common.back", locale="en") in back_btn.children
+    back_label = t("ui.common.back", locale="en")
+    assert back_label in back_btn.children
 
-    # verify home button points to root with correct label
+    # home button points to root
     assert home_btn.href == "/"
     assert home_btn.children == t("ui.common.home", locale="en")
 
-    # title should show app title text
-    assert title_div.children == t("ui.common.app_title", locale="en")
-    # spacer is just a div with a width style
-    assert hasattr(spacer, "style") and spacer.style.get("width") == "80px"
+    # secondary nav buttons
+    assert about_btn.href == "/about"
+    assert contact_btn.href == "/contact"
+    assert demo_btn.href == "/demo"

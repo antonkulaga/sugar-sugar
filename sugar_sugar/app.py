@@ -43,7 +43,18 @@ from sugar_sugar.i18n import setup_i18n, normalize_locale, t
 setup_i18n()
 
 from sugar_sugar.data import load_glucose_data
-from sugar_sugar.config import DEFAULT_POINTS, MIN_POINTS, MAX_POINTS, DOUBLE_CLICK_THRESHOLD, PREDICTION_HOUR_OFFSET
+from sugar_sugar.config import (
+    DEFAULT_POINTS,
+    MIN_POINTS,
+    MAX_POINTS,
+    DOUBLE_CLICK_THRESHOLD,
+    PREDICTION_HOUR_OFFSET,
+    DASH_DEBUG,
+    DASH_HOST,
+    DASH_PORT,
+    DEBUG_MODE,
+)
+import sugar_sugar.config as sugar_sugar_config
 from sugar_sugar.components.glucose import GlucoseChart
 from sugar_sugar.components.metrics import MetricsComponent
 from sugar_sugar.components.predictions import PredictionTableComponent
@@ -163,16 +174,33 @@ app.clientside_callback(
 app.clientside_callback(
     """
     function(n_intervals, alreadyComplete) {
+        // Guard: once complete, keep it disabled and stay complete.
         if (alreadyComplete) {
             return [true, true];
         }
         var el = document.getElementById('consent-notice-scroll');
+        // Fix (original): previously this returned [false, false] when the element
+        // was absent, writing `false` to consent-scroll-complete on every tick even
+        // though the value hadn't changed. Because dcc.Store triggers downstream
+        // server-side callbacks on every write (regardless of value equality), this
+        // caused update_continue_button to POST at the full interval rate indefinitely.
+        //
+        // Fix (this revision): the previous attempt used `return no_update` (scalar)
+        // for a multi-output callback. Dash's JS runtime does NOT treat a bare scalar
+        // no_update as "suppress all outputs" for multi-output callbacks — the correct
+        // API is `throw window.dash_clientside.PreventUpdate`, which is the JS
+        // equivalent of Python's `raise PreventUpdate`. Background-tab timer throttling
+        // (browsers slow setInterval to ~1-4s for inactive tabs) meant this kept
+        // reaching the server at ~1 POST/2 s even after the apparent fix.
         if (!el) {
-            return [false, false];
+            throw window.dash_clientside.PreventUpdate;
         }
         var epsilon = 4;
         var atEnd = (el.scrollTop + el.clientHeight) >= (el.scrollHeight - epsilon);
-        return [atEnd, atEnd];
+        if (!atEnd) {
+            throw window.dash_clientside.PreventUpdate;
+        }
+        return [true, true];
     }
     """,
     [
@@ -478,7 +506,7 @@ def create_info_page(*, locale: str, title: str, body: str) -> html.Div:
     return html.Div(
         [
             html.H1(title),
-            html.Div(body),
+            html.Div(body, style={"marginBottom": "14px"}),
         ],
         className="info-page"
     )
@@ -818,10 +846,18 @@ def create_prediction_layout(*, locale: str, format_value: str, user_info: Dict[
 @app.callback(
     Output('glucose-unit', 'data', allow_duplicate=True),
     [Input('glucose-unit-selector', 'value')],
+    [State('glucose-unit', 'data')],
     prevent_initial_call=True
 )
-def set_glucose_unit(unit_value: Optional[str]) -> str:
+def set_glucose_unit(unit_value: Optional[str], current_unit: Optional[str]) -> str:
     if unit_value not in ('mg/dL', 'mmol/L'):
+        raise PreventUpdate
+    # Fix: previously this always wrote to glucose-unit, which triggered
+    # sync_glucose_unit_selector below, which then wrote back to glucose-unit-selector,
+    # which triggered this callback again — an infinite ping-pong loop at network
+    # round-trip speed. Break the cycle by suppressing the write when the store
+    # already holds the same value the selector just reported.
+    if unit_value == current_unit:
         raise PreventUpdate
     return unit_value
 
@@ -830,12 +866,22 @@ def set_glucose_unit(unit_value: Optional[str]) -> str:
     Output('glucose-unit-selector', 'value'),
     [Input('url', 'pathname'),
      Input('glucose-unit', 'data')],
+    [State('glucose-unit-selector', 'value')],
     prevent_initial_call=False
 )
-def sync_glucose_unit_selector(pathname: Optional[str], glucose_unit: Optional[str]) -> str:
+def sync_glucose_unit_selector(
+    pathname: Optional[str],
+    glucose_unit: Optional[str],
+    current_selector: Optional[str],
+) -> str:
     if pathname != '/prediction':
         raise PreventUpdate
-    return glucose_unit if glucose_unit in ('mg/dL', 'mmol/L') else 'mg/dL'
+    resolved = glucose_unit if glucose_unit in ('mg/dL', 'mmol/L') else 'mg/dL'
+    # Fix: same loop as above, other direction. If the selector already shows the
+    # correct unit, skip the write so set_glucose_unit is not re-triggered needlessly.
+    if resolved == current_selector:
+        raise PreventUpdate
+    return resolved
 
 @app.callback(
     Output('round-indicator', 'children'),
@@ -2596,6 +2642,15 @@ def handle_file_upload(
                             "consent_use_uploaded_data_timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                         },
                     )
+            elif not pending:
+                # Loop-breaker: consent was already recorded (prev_consent=True) and
+                # there is no pending upload to process, so info_pre is identical to
+                # user_info. Returning it would write the same value back to
+                # user-info-store, re-triggering update_prediction_uploaded_data_consent_ui,
+                # which re-writes prediction-data-usage-consent.value, which triggers
+                # this callback again — an infinite server-side loop at ~2 req/s for
+                # format B/C users who have already consented on the prediction page.
+                raise PreventUpdate
 
             # If no pending upload, just persist consent in session storage.
             if not pending:
@@ -3290,19 +3345,19 @@ def main(
     host: Optional[str] = typer.Option(None, "--host", help="Host to run the server on"),
     port: Optional[int] = typer.Option(None, "--port", help="Port to run the server on")
 ) -> None:
-    """Starts the Dash server."""
-    # Import config here to update the global DEBUG_MODE variable
-    import sugar_sugar.config as config
-    
-    # Get configuration from environment variables with fallbacks
-    dash_host = host or os.getenv('DASH_HOST', '127.0.0.1')
-    dash_port = port or int(os.getenv('DASH_PORT', '8050'))
-    dash_debug = debug if debug is not None else os.getenv('DASH_DEBUG', 'True').lower() == 'true'
-    
-    # Set the global debug mode based on command line argument or environment
-    config.DEBUG_MODE = debug if debug is not None else os.getenv('DEBUG_MODE', 'True').lower() == 'true'
-    
-    # Create components after setting debug mode
+    """Start the Dash server.
+
+    Defaults come from ``sugar_sugar.config`` (``DASH_*``, ``DEBUG_MODE``). If
+    ``--debug`` / ``--no-debug`` is passed, Dash ``debug`` follows it and
+    ``config.DEBUG_MODE`` is updated so in-app debug (e.g. test button) stays in sync.
+    """
+    dash_host = DASH_HOST if host is None else (host or DASH_HOST)
+    dash_port = DASH_PORT if port is None else port
+    dash_debug = DASH_DEBUG if debug is None else debug
+    if debug is not None:
+        sugar_sugar_config.DEBUG_MODE = debug
+
+    # Create components after setting debug mode (when CLI passed --debug)
     global startup_page
     global landing_page
     landing_page = LandingPage()
