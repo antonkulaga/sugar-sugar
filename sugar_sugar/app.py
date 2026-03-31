@@ -505,7 +505,7 @@ def create_info_page(*, locale: str, title: str, body: str) -> html.Div:
     return html.Div(
         [
             html.H1(title),
-            html.Div(body),
+            html.Div(body, style={"marginBottom": "14px"}),
         ],
         className="info-page"
     )
