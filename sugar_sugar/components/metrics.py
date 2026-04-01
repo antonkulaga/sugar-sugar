@@ -2,6 +2,7 @@ from typing import Optional, Any
 from dash import Dash, html, dcc, Output, Input
 import polars as pl
 
+from sugar_sugar.config import STORAGE_TYPE
 from sugar_sugar.i18n import normalize_locale, t
 
 
@@ -10,7 +11,7 @@ class MetricsComponent(html.Div):
         # Create the layout with session storage
         super().__init__(
             children=[
-                dcc.Store(id='metrics-store', data=None),  # Session storage for metrics
+                dcc.Store(id='metrics-store', data=None, storage_type=STORAGE_TYPE),
                 html.Div(
                     id='metrics-container',
                     children=[

@@ -2,6 +2,7 @@ from typing import Optional, Tuple, Any
 from dash import html, dash_table, dcc, Output, Input
 import polars as pl
 import dash
+from sugar_sugar.config import STORAGE_TYPE
 
 
 TableData = list[dict[str, str]]
@@ -12,7 +13,7 @@ class PredictionTableComponent(html.Div):
         # Create the layout with session storage and initial empty table
         super().__init__(
             children=[
-                dcc.Store(id='current-df-store', data=None),  # Session storage for current DataFrame
+                dcc.Store(id='current-df-store', data=None, storage_type=STORAGE_TYPE),
                 html.H4("Predictions Table", style={'fontSize': '20px', 'marginBottom': '10px'}),
                 dash_table.DataTable(
                     id='prediction-table-data',

@@ -6,7 +6,7 @@ from dash import dcc, Output, Input, State
 from dash import Dash, html
 from dash.exceptions import PreventUpdate
 from eliot import start_action
-from sugar_sugar.config import PREDICTION_HOUR_OFFSET
+from sugar_sugar.config import PREDICTION_HOUR_OFFSET, STORAGE_TYPE
 from sugar_sugar.i18n import normalize_locale, t
 
 
@@ -26,9 +26,9 @@ class GlucoseChart(html.Div):
 
     def __init__(self, id: str = 'glucose-chart', hide_last_hour: bool = False) -> None:
         super().__init__([
-            dcc.Store(id=f"{id}-df-store", data=None),
-            dcc.Store(id=f"{id}-events-store", data=None),
-            dcc.Store(id=f"{id}-source-store", data=None),
+            dcc.Store(id=f"{id}-df-store", data=None, storage_type=STORAGE_TYPE),
+            dcc.Store(id=f"{id}-events-store", data=None, storage_type=STORAGE_TYPE),
+            dcc.Store(id=f"{id}-source-store", data=None, storage_type=STORAGE_TYPE),
             dcc.Graph(
                 id=f"{id}-graph",
                 figure=self._create_empty_figure(),
@@ -62,8 +62,15 @@ class GlucoseChart(html.Div):
             autosize=True,
             xaxis=dict(title='Time'),
             yaxis=dict(title='Glucose Level (mg/dL)'),
-            margin=dict(l=50, r=50, t=50, b=50),
+            margin=dict(l=50, r=20, t=80, b=50),
             showlegend=True,
+            legend=dict(
+                orientation='h',
+                yanchor='bottom',
+                y=1.02,
+                xanchor='center',
+                x=0.5,
+            ),
             plot_bgcolor='white',
             paper_bgcolor='white'
         )
@@ -551,8 +558,15 @@ class GlucoseChart(html.Div):
                 showgrid=True,
                 range=y_range
             ),
-            margin=dict(l=50, r=50, t=50, b=50),
+            margin=dict(l=50, r=20, t=80, b=50),
             showlegend=True,
+            legend=dict(
+                orientation='h',
+                yanchor='bottom',
+                y=1.02,
+                xanchor='center',
+                x=0.5,
+            ),
             dragmode='drawline',
             hovermode='closest',
             plot_bgcolor='white',

@@ -1,3 +1,10 @@
+/* Force desktop-width layout on all viewports.
+   The <meta viewport width=1280> handles real mobile browsers;
+   min-width prevents CSS reflow below 1280px as a fallback. */
+html, body {
+  min-width: 1280px;
+}
+
 /* Remove default body margin and padding */
 body {
   margin: 0 !important;

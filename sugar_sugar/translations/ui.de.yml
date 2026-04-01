@@ -215,6 +215,8 @@ de:
     next_round: "Nächste Runde"
     view_complete_analysis: "Komplette Analyse ansehen"
     graph_explanation: "Das Diagramm zeigt das Glukosfenster, das Sie vorhergesagt haben. Die orangefarbene gestrichelte Linie trennt die bekannte Vorgeschichte (links) von der vorhergesagten Stunde (rechts). Ihre Vorhersagen sind rot dargestellt."
+    data_source_label: "Datenquelle: %{source}"
+    local_storage_note: "Dein Fortschritt wird lokal in diesem Browser gespeichert. Du kannst eine Pause einlegen und später im selben Browser fortfahren."
 
   final:
     title: "Komplette Analyse"
@@ -234,7 +236,7 @@ de:
     not_eligible_no_cgm: "B/C sind nur verfügbar, wenn du angegeben hast, dass du CGM‑Daten hast."
 
   results_disclaimer:
-    line1: "Diese Werte messen Vorhersageleistung, nicht Gesundheitszustand"
-    line2: "Nicht verwenden, um Insulin, Ernährung oder andere medizinische Entscheidungen anzupassen"
-    line3: "Folge weiterhin den Empfehlungen deines Behandlungsteams"
+    line1: "Diese Ergebnisse dienen ausschließlich Forschungszwecken"
+    line2: "Unabhängig von deinen Ergebnissen, ändere keine medizinischen Entscheidungen aufgrund dieser App"
+    line3: "Folge immer den Empfehlungen deines Behandlungsteams"
 

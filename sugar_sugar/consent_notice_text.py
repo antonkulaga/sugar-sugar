@@ -5,9 +5,8 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Final, Optional
 
-from dash import dcc
-
-from sugar_sugar.i18n import normalize_locale
+from sugar_sugar.i18n import normalize_locale, t
+from sugar_sugar.static_markdown import static_markdown_iframe
 
 _CONSENT_NOTICE_MD_RELATIVE_PATH: Final[Path] = Path(
     "data/input/patient_consent_form/Teilnehmerinformation_und_Einwilligungserklaerung_v2.docx.md"
@@ -480,11 +479,9 @@ def consent_notice_children(locale: Optional[str]) -> list[object]:
     md_text = out_text
 
     return [
-        dcc.Markdown(
+        static_markdown_iframe(
             md_text,
-            link_target="_blank",
-            dangerously_allow_html=True,
-            style={"color": "#334155", "lineHeight": "1.6"},
+            title=t("ui.landing.patient_consent_form_title", locale=loc),
         )
     ]
 

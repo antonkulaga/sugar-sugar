@@ -53,6 +53,8 @@ from sugar_sugar.config import (
     DASH_HOST,
     DASH_PORT,
     DEBUG_MODE,
+    MAX_ROUNDS,
+    STORAGE_TYPE,
 )
 import sugar_sugar.config as sugar_sugar_config
 from sugar_sugar.components.glucose import GlucoseChart
@@ -67,12 +69,12 @@ from sugar_sugar.components.ending import EndingPage
 from sugar_sugar.components.navbar import NavBar
 from sugar_sugar.generic_sources_metadata import load_generic_sources_metadata
 from sugar_sugar.contact_info import load_contact_info
+from sugar_sugar.static_markdown import static_markdown_iframe
 
 # Type aliases for clarity
 TableData = List[Dict[str, str]]  # Format for the predictions table data
 Figure = go.Figure  # Plotly figure type
 
-MAX_ROUNDS: int = 12
 GLUCOSE_MGDL_PER_MMOLL: float = 18.0
 
 FORMAT_ORDER: dict[str, int] = {"C": 0, "B": 1, "A": 2}
@@ -279,6 +281,7 @@ ending_page = EndingPage()
 # When _CHART_MODE env var is set, pre-populate stores for the prediction page
 # so the debug reloader preserves the state across forks.
 _is_chart_mode = os.environ.get("_CHART_MODE") == "1"
+_clean_storage = os.environ.get("_CLEAN_STORAGE") == "1"
 _chart_source = os.environ.get("_CHART_SOURCE", "example.csv")
 _chart_is_example = _chart_file_env is None
 _chart_unit = os.environ.get("_CHART_UNIT", "mg/dL")
@@ -317,20 +320,26 @@ else:
 
 app.layout = html.Div([
     dcc.Location(id='url', refresh=False, pathname="/prediction" if _is_chart_mode else "/"),
-    dcc.Store(id='user-info-store', data=_chart_user_info),
+    dcc.Store(id='user-info-store', data=_chart_user_info, storage_type=STORAGE_TYPE),
     dcc.Store(id='last-click-time', data=0),
     dcc.Store(id='consent-scroll-request', data=0),
-    dcc.Store(id='current-window-df', data=example_initial_df_store),
-    dcc.Store(id='full-df', data=example_full_df_store),
-    dcc.Store(id='events-df', data=example_events_df_store),
-    dcc.Store(id='is-example-data', data=_chart_is_example),
-    dcc.Store(id='data-source-name', data=_chart_source if _is_chart_mode else "example.csv"),
-    dcc.Store(id='randomization-initialized', data=_is_chart_mode),
-    dcc.Store(id='glucose-chart-mode', data={'hide_last_hour': True}),
-    dcc.Store(id='glucose-unit', data=_chart_unit if _is_chart_mode else 'mg/dL', storage_type='session'),
-    dcc.Store(id='interface-language', data=_chart_locale if _is_chart_mode else 'en', storage_type='session'),
-    dcc.Store(id='user-agent', data=None, storage_type='session'),
-    dcc.Store(id='initial-slider-value', data=example_initial_slider_value),
+    dcc.Store(id='current-window-df', data=example_initial_df_store, storage_type=STORAGE_TYPE),
+    dcc.Store(id='full-df', data=example_full_df_store, storage_type=STORAGE_TYPE),
+    dcc.Store(id='events-df', data=example_events_df_store, storage_type=STORAGE_TYPE),
+    dcc.Store(id='is-example-data', data=_chart_is_example, storage_type=STORAGE_TYPE),
+    dcc.Store(id='data-source-name', data=_chart_source if _is_chart_mode else "example.csv", storage_type=STORAGE_TYPE),
+    dcc.Store(id='randomization-initialized', data=_is_chart_mode, storage_type=STORAGE_TYPE),
+    dcc.Store(id='glucose-chart-mode', data={'hide_last_hour': True}, storage_type=STORAGE_TYPE),
+    dcc.Store(id='glucose-unit', data=_chart_unit if _is_chart_mode else 'mg/dL', storage_type=STORAGE_TYPE),
+    dcc.Store(id='interface-language', data=_chart_locale if _is_chart_mode else 'en', storage_type=STORAGE_TYPE),
+    dcc.Store(id='user-agent', data=None, storage_type=STORAGE_TYPE),
+    dcc.Store(id='initial-slider-value', data=example_initial_slider_value, storage_type=STORAGE_TYPE),
+    # Tracks the last page the user reached so we can restore it on reload (local storage only).
+    dcc.Store(id='last-visited-page', data=None, storage_type=STORAGE_TYPE),
+    # One-shot flag: prevents the restore-redirect from firing more than once per session.
+    dcc.Store(id='page-restore-done', data=False, storage_type='memory'),
+    # Set to True by --clean flag; consumed once by a clientside callback to wipe localStorage.
+    dcc.Store(id='clean-storage-flag', data=_clean_storage, storage_type='memory'),
 
     html.Div(id='mobile-warning', style={'margin': '12px 0'}),
     html.Div(id='scroll-to-top-trigger', style={'display': 'none'}),
@@ -637,13 +646,19 @@ def create_about_page(*, locale: str) -> html.Div:
                     style={"marginBottom": "16px"},
                 ),
                 html.Div(
-                    dcc.Markdown(study_md, link_target="_blank"),
+                    static_markdown_iframe(
+                        study_md,
+                        title=t("ui.about.study_design_title", locale=locale),
+                        iframe_style={
+                            "height": "min(70vh, 900px)",
+                        },
+                    ),
                     className="study-design-content",
                     style={
                         "overflowY": "auto",
                         "border": "1px solid rgba(15, 23, 42, 0.10)",
                         "borderRadius": "12px",
-                        "padding": "20px 24px",
+                        "padding": "12px 16px",
                         "background": "rgba(255,255,255,0.75)",
                     },
                 ),
@@ -1143,11 +1158,45 @@ def create_ending_layout(
     show_switch_data_consent = False
     switch_data_consent_value: list[str] = []
 
+    data_source_name = str(user_info.get('data_source_name') or '') if user_info else ''
+    meta = GENERIC_SOURCES_METADATA.get(Path(data_source_name).name) if data_source_name else None
+
+    subject_parts: list[str] = []
+    if data_source_name:
+        subject_parts.append(t("ui.ending.data_source_label", locale=locale, source=Path(data_source_name).name))
+    if meta:
+        gender_raw = str(meta.gender or "").strip().lower()
+        gender_display = (
+            t(f"ui.startup.gender_{gender_raw}", locale=locale)
+            if gender_raw in ("male", "female", "na")
+            else meta.gender
+        )
+        subject_parts.append(
+            f"{t('ui.startup.age_label', locale=locale)}: {meta.age} · "
+            f"{t('ui.startup.gender_label', locale=locale)}: {gender_display} · "
+            f"{t('ui.header.weight_label', locale=locale)}: {meta.weight}"
+        )
+    elif user_info:
+        age = user_info.get('age')
+        gender_raw = str(user_info.get('gender') or "").strip().lower()
+        if age:
+            gender_display = (
+                t(f"ui.startup.gender_{gender_raw}", locale=locale)
+                if gender_raw in ("male", "female", "na")
+                else (user_info.get('gender') or "")
+            )
+            parts = [f"{t('ui.startup.age_label', locale=locale)}: {age}"]
+            if gender_display:
+                parts.append(f"{t('ui.startup.gender_label', locale=locale)}: {gender_display}")
+            subject_parts.append(" · ".join(parts))
+
+    subject_info_line = " — ".join(subject_parts) if subject_parts else ""
+
     return html.Div([
         html.H1(t("ui.ending.title", locale=locale), style={
             'textAlign': 'center', 
             'marginBottom': '20px',
-            'fontSize': 'clamp(24px, 4vw, 48px)',  # Responsive font size
+            'fontSize': 'clamp(24px, 4vw, 48px)',
             'padding': '0 10px'
         }),
         html.Div(
@@ -1175,10 +1224,21 @@ def create_ending_layout(
             disable_n_clicks=True,
             style={
                 'textAlign': 'center',
-                'marginBottom': '15px',
+                'marginBottom': '5px',
                 'fontSize': 'clamp(16px, 2.5vw, 22px)',
                 'fontWeight': '600',
                 'color': '#2c5282'
+            }
+        ),
+        html.Div(
+            subject_info_line,
+            disable_n_clicks=True,
+            style={
+                'textAlign': 'center',
+                'marginBottom': '5px',
+                'color': '#4a5568',
+                'fontSize': '13px',
+                'display': 'block' if subject_info_line else 'none',
             }
         ),
         html.Div(
@@ -1186,12 +1246,11 @@ def create_ending_layout(
             disable_n_clicks=True,
             style={
                 'textAlign': 'center',
-                'marginBottom': '15px',
+                'marginBottom': '5px',
                 'color': '#4a5568',
                 'fontSize': '14px'
             }
         ),
-        
         # Graph section - full window with known + predicted lines
         html.Div([
             html.P(
@@ -1312,6 +1371,18 @@ def create_ending_layout(
             }
         ),
         
+        html.Div(
+            t("ui.ending.local_storage_note", locale=locale),
+            disable_n_clicks=True,
+            style={
+                'textAlign': 'center',
+                'marginBottom': '10px',
+                'color': '#2d6a4f',
+                'fontSize': '13px',
+                'fontStyle': 'italic',
+                'display': 'block' if STORAGE_TYPE == 'local' else 'none',
+            }
+        ),
         html.Div([
             html.Button(
                 t("ui.ending.view_complete_analysis", locale=locale) if is_last_round else t("ui.common.finish_exit", locale=locale),
@@ -2402,10 +2473,7 @@ def handle_restart_button(n_clicks: Optional[int]) -> Tuple[str, None, Dict[str,
     if n_clicks:
         with start_action(action_type=u"handle_restart_button") as action:
             action.log(message_type="restart_clicked")
-        # Reset chart mode to hide last hour when going back to prediction
         chart_mode = {'hide_last_hour': True}
-        # Reset randomization flag to trigger new random position
-        # Reset interface language to English when restarting the game
         return '/', None, chart_mode, False, 'mg/dL', 'en'
     return no_update, no_update, no_update, no_update, no_update, no_update
 
@@ -2622,6 +2690,126 @@ app.clientside_callback(
     [Input('url', 'pathname'),
      Input('consent-scroll-request', 'data')]
 )
+
+# --- --clean flag: wipe localStorage on first connect ---
+# The flag is set via env var by ``uv run start --clean``.  The clientside
+# callback runs once (memory-backed store) and clears all Dash-persisted
+# localStorage keys so the session starts fresh.  Subsequent tabs or reloads
+# against the same running server will also clean, which is the intended
+# behaviour: stop the server to stop cleaning.
+app.clientside_callback(
+    """
+    function(shouldClean) {
+        if (!shouldClean) { return false; }
+        try { window.localStorage.clear(); } catch (e) {}
+        return false;
+    }
+    """,
+    Output('clean-storage-flag', 'data'),
+    [Input('clean-storage-flag', 'data')],
+)
+
+# --- Page-restore logic for STORAGE_TYPE=local ---
+#
+# Two responsibilities:
+#  1. *Persist* – write the current pathname into ``last-visited-page`` whenever
+#     the user navigates to a main-flow page.  Done client-side for speed.
+#     We skip the very first write if the pathname is ``/`` so the restore
+#     callback (below) has a chance to redirect before the persisted value is
+#     overwritten with ``/``.
+#  2. *Restore* – on the very first page load, if ``last-visited-page`` holds a
+#     non-landing value from a prior session (localStorage), redirect to that
+#     page provided enough session state exists to render it.
+#
+# Ordering guarantee: Dash hydrates ``dcc.Store(storage_type='local')`` from
+# the browser *after* the initial server-side render.  The hydration writes to
+# the store's ``data`` property, which fires any ``Input`` callbacks.  We use
+# ``prevent_initial_call=True`` on the restore callback so it only fires on
+# the *hydrated* value, never on the server-default ``None``.
+
+app.clientside_callback(
+    """
+    function(pathname) {
+        var restorable = ["/", "/startup", "/prediction", "/ending", "/final"];
+        if (restorable.indexOf(pathname) === -1) {
+            return window.dash_clientside.no_update;
+        }
+        // On the very first render the URL is always "/".  Skip persisting "/"
+        // so the restore callback can read the real stored value first.
+        if (!window._sugarPagePersistReady) {
+            window._sugarPagePersistReady = true;
+            if (pathname === "/") {
+                return window.dash_clientside.no_update;
+            }
+        }
+        return pathname;
+    }
+    """,
+    Output('last-visited-page', 'data'),
+    [Input('url', 'pathname')],
+)
+
+
+@app.callback(
+    [Output('url', 'pathname', allow_duplicate=True),
+     Output('page-restore-done', 'data')],
+    [Input('last-visited-page', 'data')],
+    [State('page-restore-done', 'data'),
+     State('url', 'pathname'),
+     State('user-info-store', 'data'),
+     State('full-df', 'data')],
+    prevent_initial_call=True,
+)
+def restore_page_on_load(
+    last_page: Optional[str],
+    already_done: Optional[bool],
+    pathname: Optional[str],
+    user_info: Optional[Dict[str, Any]],
+    full_df_data: Optional[Dict],
+) -> Tuple[str, bool]:
+    """On very first render, redirect to the page the user was last on (local storage).
+
+    Fires when localStorage hydrates ``last-visited-page``.  The memory-backed
+    ``page-restore-done`` flag ensures it only acts once per browser tab.
+    """
+    if already_done or _is_chart_mode:
+        raise PreventUpdate
+
+    if not last_page or last_page == "/":
+        return no_update, True
+
+    with start_action(action_type=u"restore_page_on_load", last_page=last_page, has_user_info=user_info is not None) as action:
+        if last_page == "/startup":
+            action.log(message_type="restoring", target="/startup")
+            return "/startup", True
+
+        if last_page == "/prediction":
+            if user_info:
+                action.log(message_type="restoring", target="/prediction")
+                return "/prediction", True
+            action.log(message_type="fallback", target="/startup", reason="no user_info")
+            return "/startup", True
+
+        if last_page == "/ending":
+            has_prediction_data = bool(user_info and "prediction_table_data" in user_info)
+            if has_prediction_data and full_df_data:
+                action.log(message_type="restoring", target="/ending")
+                return "/ending", True
+            if user_info:
+                action.log(message_type="fallback", target="/prediction", reason="no prediction data")
+                return "/prediction", True
+            action.log(message_type="fallback", target="/", reason="no session data")
+            return no_update, True
+
+        if last_page == "/final":
+            if user_info:
+                action.log(message_type="restoring", target="/final")
+                return "/final", True
+            action.log(message_type="fallback", target="/", reason="no user_info")
+            return no_update, True
+
+    return no_update, True
+
 
 ## Removed URL-based data writer callback to enforce single-writer for data stores
 
@@ -3468,7 +3656,8 @@ def main(
     typer_ctx: typer.Context,
     debug: Optional[bool] = typer.Option(None, "--debug", help="Enable debug mode to show test button"),
     host: Optional[str] = typer.Option(None, "--host", help="Host to run the server on"),
-    port: Optional[int] = typer.Option(None, "--port", help="Port to run the server on")
+    port: Optional[int] = typer.Option(None, "--port", help="Port to run the server on"),
+    clean: bool = typer.Option(False, "--clean", help="Clear browser localStorage on first connect so the session starts fresh"),
 ) -> None:
     """Start the Dash server.
 
@@ -3478,6 +3667,13 @@ def main(
     """
     if typer_ctx.invoked_subcommand is not None:
         return
+
+    if clean:
+        os.environ["_CLEAN_STORAGE"] = "1"
+        for child in app.layout.children:
+            if getattr(child, 'id', None) == 'clean-storage-flag':
+                child.data = True
+                break
 
     dash_host = DASH_HOST if host is None else (host or DASH_HOST)
     dash_port = DASH_PORT if port is None else port
@@ -3492,7 +3688,8 @@ def main(
         action_type=u"start_dash_server",
         host=dash_host,
         port=dash_port,
-        debug=dash_debug
+        debug=dash_debug,
+        clean=clean
     ):
         app.run(host=dash_host, port=dash_port, debug=dash_debug)
 

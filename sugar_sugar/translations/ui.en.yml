@@ -214,6 +214,8 @@ en:
     next_round: "Next round"
     view_complete_analysis: "View complete analysis"
     graph_explanation: "The chart shows the glucose window you predicted on. The orange dashed line separates the known history (left) from the hour you predicted (right). Your predictions are shown in red."
+    data_source_label: "Data source: %{source}"
+    local_storage_note: "Your progress is saved locally in this browser. You can take a break and resume later using the same browser."
 
   final:
     title: "Complete Analysis"
@@ -233,7 +235,7 @@ en:
     not_eligible_no_cgm: "B/C are only available if you said you have CGM data."
 
   results_disclaimer:
-    line1: "These scores measure prediction performance, not health status"
-    line2: "Do not use to adjust insulin, diet, or any medical decisions"
-    line3: "Continue following your healthcare provider's guidance"
+    line1: "These scores are for research purposes only"
+    line2: "Regardless of your results, do not change any medical decisions based on this app"
+    line3: "Always follow your healthcare provider's guidance"
 
