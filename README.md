@@ -98,6 +98,32 @@ uv run start --host 0.0.0.0 --port 3000 --debug
 
 Note: Debug mode adds a "Just Test Me" button for quickly filling in the form during development.
 
+### Quick Chart Debugging
+
+To skip the landing/startup/consent pages and jump straight to the prediction chart:
+```bash
+uv run chart
+```
+
+This loads the example dataset, pre-fills test user info, and opens the prediction page immediately. You can also point it at your own CSV:
+```bash
+# Load an external Dexcom/Libre/Medtronic CSV
+uv run chart --file /path/to/export.csv
+
+# Pre-fill predictions with noisy ground truth (test submit/ending without drawing)
+uv run chart --prefill
+uv run chart --prefill --noise 0.10   # +/-10% noise
+
+# Control the data window
+uv run chart --points 48 --start 100
+
+# Use mmol/L units and German locale
+uv run chart --unit mmol/L --locale de
+
+# Custom host/port
+uv run chart --host 0.0.0.0 --port 3000
+```
+
 ## KNOWN ISSUES:
 
 - Currently only Dexcom and Libre 3 are supported. We will add support for other CGM devices soon.

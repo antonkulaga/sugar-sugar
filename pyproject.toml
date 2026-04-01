@@ -23,6 +23,7 @@ dependencies = [
 
 [project.scripts]
 start = "sugar_sugar.app:cli_main"
+chart = "sugar_sugar.app:chart_main"
 
 [dependency-groups]
 dev = [
