@@ -9,6 +9,7 @@ When the user draws the line it interpolates the position to detect closes gluco
 
 uv is used as the package manager for the project.
 uv run start is used to run the dash app.
+uv run chart is the fast dev shortcut: it starts Dash with data pre-loaded and routes straight to the prediction chart (bypasses landing, startup, and consent). Use this whenever the user asks to debug or test the chart in the browser. Only fall back to uv run start when the user explicitly needs the startup/landing/consent screens. uv run chart accepts --file, --points, --start, --unit, --locale, --host, --port options. Use --prefill to pre-fill the prediction region with noisy ground-truth values so the submit/ending/metrics flow can be tested without drawing (--noise controls the noise level, default 5%). Always prefer uv run chart --prefill over attempting browser automation for testing submit or ending pages.
 
 ## Known Dash pitfalls
 
@@ -36,3 +37,26 @@ For file pathes prefer to use pathlib, for cli - typer, for dataframes - polars.
 We try to split logic into components and use functional style when possible, avoiding unneccesary mutability and duplication.
 We use eliot logging library with with start_action(action_type=u"action_name") as action pattern to log results to logs folder. We use to_nice_file, to_nice_stdout from pycomfort logging to tell where to save files
 Avoid excessive try-catch blocks
+
+### Dash debug reloader caveat
+
+Dash `debug=True` uses Werkzeug's auto-reloader, which forks a child process that re-imports the entire module. Any runtime mutations to `app.layout` are lost on reload. To pass configuration that must survive the fork (e.g. `uv run chart --prefill`), use environment variables read at module-level import time, not post-layout mutations.
+
+### Mobile viewport
+
+The app forces a desktop-width layout viewport (`_DESKTOP_LAYOUT_VIEWPORT_CSS_PX = 1280`) via a `meta_tags` viewport entry on the `Dash()` constructor. This makes mobile browsers scale the page like "Request desktop site" instead of using `width=device-width`. Do not revert to `device-width`; the chart/drawing UI is unusable at phone-width layouts.
+
+## Learned User Preferences
+
+- Never attempt browser automation (drawing predictions, clicking through multi-step forms) with LLM agents — it fails; always use `uv run chart --prefill` instead
+- Use `fuser -k PORT/tcp` to kill stray Dash processes on a busy port
+- Keep `logs/*` with `!logs/.gitkeep` in `.gitignore` to preserve the directory in git while ignoring log files; `.cursor/` must be fully gitignored
+- The UI uses Fomantic UI (Semantic UI fork) classes alongside Dash — prefix interactive classes with `ui` (e.g. `ui green button`)
+
+## Learned Workspace Facts
+
+- The app uses Fomantic UI CSS/JS loaded via `external_stylesheets` and `external_scripts` (jQuery is loaded first as a dependency)
+- GitHub repo is GlucoseDAO/sugar-sugar; issues are tracked there
+- `suppress_callback_exceptions=True` is set on the Dash app to allow callbacks referencing components not yet in the layout
+- The navbar back-button uses `html.A` with `href`; the callback wired to `navbar-back-link` is effectively dead code (component id is `navbar-back-button`)
+- The consent/landing page requires scrolling the participant text to the bottom before checkboxes become interactive (enforced by `dcc.Interval` polling)

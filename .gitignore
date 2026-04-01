@@ -183,3 +183,7 @@ prediction_ranking_B.csv
 prediction_ranking_C.csv
 
 logs/*
+!logs/.gitkeep
+
+# Cursor IDE
+.cursor/

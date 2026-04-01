@@ -137,16 +137,54 @@ def get_random_data_window(
     windowed_df = full_df.slice(random_start, points)
     return windowed_df, random_start
 
-# Load example data once at startup for initial session storage with randomization
-example_full_df, example_events_df = load_glucose_data()  # Unpack both dataframes
-example_full_df = example_full_df.with_columns(pl.lit(0.0).alias('prediction'))
-example_initial_df, example_initial_start = get_random_data_window(example_full_df, DEFAULT_POINTS)
-example_initial_df = example_initial_df.with_columns(pl.lit(0.0).alias('prediction'))
+# Load initial data for session storage.
+# When ``_CHART_FILE`` env var is set (by the ``chart`` CLI command), load from
+# that file and optionally prefill predictions so the debug reloader preserves
+# the state across forks.
+_chart_file_env = os.environ.get("_CHART_FILE")
+_chart_prefill = os.environ.get("_CHART_PREFILL") == "1"
+_chart_noise = float(os.environ.get("_CHART_NOISE", "0.05"))
+_chart_points = int(os.environ.get("_CHART_POINTS", str(DEFAULT_POINTS)))
+_chart_start_env = os.environ.get("_CHART_START")
 
-example_full_df_store = dataframe_to_store_dict(example_full_df)
-example_initial_df_store = dataframe_to_store_dict(example_initial_df)
-example_events_df_store = events_dataframe_to_store_dict(example_events_df)
-example_initial_slider_value = example_initial_start
+if _chart_file_env:
+    _init_full_df, _init_events_df = load_glucose_data(Path(_chart_file_env))
+else:
+    _init_full_df, _init_events_df = load_glucose_data()
+
+_init_full_df = _init_full_df.with_columns(pl.lit(0.0).alias("prediction"))
+
+if _chart_start_env is not None:
+    _init_start = max(0, min(int(_chart_start_env), len(_init_full_df) - _chart_points))
+    _init_window_df = _init_full_df.slice(_init_start, _chart_points)
+else:
+    _init_window_df, _init_start = get_random_data_window(_init_full_df, _chart_points)
+
+_init_window_df = _init_window_df.with_columns(pl.lit(0.0).alias("prediction"))
+
+if _chart_prefill:
+    import random as _rnd
+    _n = len(_init_window_df)
+    _visible = _n - PREDICTION_HOUR_OFFSET
+    _gl_vals = _init_window_df.get_column("gl").to_list()
+    _preds = [0.0] * _n
+    for _i in range(_visible, _n):
+        _gl = _gl_vals[_i]
+        if _gl is not None:
+            _preds[_i] = round(_gl * (1.0 + _rnd.uniform(-_chart_noise, _chart_noise)), 1)
+    _init_window_df = _init_window_df.with_columns(pl.Series("prediction", _preds, dtype=pl.Float64))
+    for _i in range(len(_init_window_df)):
+        _pv = _init_window_df.get_column("prediction")[_i]
+        if _pv != 0.0:
+            _tv = _init_window_df.get_column("time")[_i]
+            _init_full_df = _init_full_df.with_columns(
+                pl.when(pl.col("time") == _tv).then(_pv).otherwise(pl.col("prediction")).alias("prediction")
+            )
+
+example_full_df_store = dataframe_to_store_dict(_init_full_df)
+example_initial_df_store = dataframe_to_store_dict(_init_window_df)
+example_events_df_store = events_dataframe_to_store_dict(_init_events_df)
+example_initial_slider_value = _init_start
 
 external_stylesheets = [
     'https://codepen.io/chriddyp/pen/bWLwgP.css',
@@ -155,10 +193,25 @@ external_stylesheets = [
     'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css',
 ]
 
-app = dash.Dash(__name__, 
+# Dash defaults to width=device-width, which makes phones use a narrow layout viewport and
+# breaks chart/drawing. A fixed layout width matches what mobile browsers do for "Desktop
+# site": the page is laid out at desktop width and scaled to fit the screen.
+_DESKTOP_LAYOUT_VIEWPORT_CSS_PX: int = 1280
+
+app = dash.Dash(
+    __name__,
     external_stylesheets=external_stylesheets,
     assets_folder=str(project_root / 'assets'),
-    suppress_callback_exceptions=True
+    suppress_callback_exceptions=True,
+    meta_tags=[
+        {
+            "name": "viewport",
+            "content": (
+                f"width={_DESKTOP_LAYOUT_VIEWPORT_CSS_PX}, "
+                "maximum-scale=5, user-scalable=yes"
+            ),
+        },
+    ],
 )
 app.title = "Sugar Sugar - Glucose Prediction Game"
 
@@ -223,33 +276,67 @@ startup_page = None  # Will be initialized in main()
 landing_page = None  # Will be initialized in main()
 ending_page = EndingPage()
 
-# Set initial layout to startup page
+# When _CHART_MODE env var is set, pre-populate stores for the prediction page
+# so the debug reloader preserves the state across forks.
+_is_chart_mode = os.environ.get("_CHART_MODE") == "1"
+_chart_source = os.environ.get("_CHART_SOURCE", "example.csv")
+_chart_is_example = _chart_file_env is None
+_chart_unit = os.environ.get("_CHART_UNIT", "mg/dL")
+_chart_locale = os.environ.get("_CHART_LOCALE", "en")
+
+if _is_chart_mode:
+    _chart_user_info: Optional[Dict[str, Any]] = {
+        "study_id": str(uuid.uuid4()),
+        "email": "dev@chart.local",
+        "age": 28,
+        "gender": "F",
+        "uses_cgm": True,
+        "cgm_duration_years": 1,
+        "format": "A",
+        "run_format": "A",
+        "consent_use_uploaded_data": False,
+        "diabetic": True,
+        "diabetic_type": "Type 1",
+        "diabetes_duration": 5,
+        "location": "Dev Machine",
+        "rounds": [],
+        "max_rounds": MAX_ROUNDS,
+        "current_round_number": 1,
+        "statistics_saved": False,
+        "is_example_data": _chart_is_example,
+        "data_source_name": _chart_source,
+        "consent_play_only": True,
+        "consent_participate_in_study": False,
+        "consent_receive_results_later": False,
+        "consent_keep_up_to_date": False,
+        "consent_no_selection": False,
+        "consent_timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+    }
+else:
+    _chart_user_info = None
+
 app.layout = html.Div([
-    dcc.Location(id='url', refresh=False),
-    dcc.Store(id='user-info-store', data=None),
+    dcc.Location(id='url', refresh=False, pathname="/prediction" if _is_chart_mode else "/"),
+    dcc.Store(id='user-info-store', data=_chart_user_info),
     dcc.Store(id='last-click-time', data=0),
-    # Used to request a scroll-to-top after consent actions (prevents "header disappeared" UX).
     dcc.Store(id='consent-scroll-request', data=0),
     dcc.Store(id='current-window-df', data=example_initial_df_store),
     dcc.Store(id='full-df', data=example_full_df_store),
     dcc.Store(id='events-df', data=example_events_df_store),
-    dcc.Store(id='is-example-data', data=True),
-    dcc.Store(id='data-source-name', data="example.csv"),  # Store source filename
-    dcc.Store(id='randomization-initialized', data=False),  # Track if randomization has been done
+    dcc.Store(id='is-example-data', data=_chart_is_example),
+    dcc.Store(id='data-source-name', data=_chart_source if _is_chart_mode else "example.csv"),
+    dcc.Store(id='randomization-initialized', data=_is_chart_mode),
     dcc.Store(id='glucose-chart-mode', data={'hide_last_hour': True}),
-    dcc.Store(id='glucose-unit', data='mg/dL', storage_type='session'),
-    dcc.Store(id='interface-language', data='en', storage_type='session'),
+    dcc.Store(id='glucose-unit', data=_chart_unit if _is_chart_mode else 'mg/dL', storage_type='session'),
+    dcc.Store(id='interface-language', data=_chart_locale if _is_chart_mode else 'en', storage_type='session'),
     dcc.Store(id='user-agent', data=None, storage_type='session'),
-    dcc.Store(id='initial-slider-value', data=example_initial_slider_value),  # Store initial random start
+    dcc.Store(id='initial-slider-value', data=example_initial_slider_value),
 
     html.Div(id='mobile-warning', style={'margin': '12px 0'}),
-    # Present on every page so scroll callback always has a target.
     html.Div(id='scroll-to-top-trigger', style={'display': 'none'}),
 
-    # Navigation bar (top of page)
     html.Div(id='navbar-container', children=[], disable_n_clicks=True),
     
-    # Main content area
     html.Div(id='page-content', children=[], disable_n_clicks=True)
 ])
 
@@ -3356,11 +3443,29 @@ def find_nearest_time(x: Union[str, float, datetime], df: pl.DataFrame) -> datet
 
 
 
-# Create typer app
-cli = typer.Typer()
+def _register_all_callbacks() -> None:
+    """Register all Dash component callbacks (shared by ``main`` and ``chart``)."""
+    global startup_page, landing_page
+    landing_page = LandingPage()
+    startup_page = StartupPage()
 
-@cli.command()
+    prediction_table.register_callbacks(app)
+    metrics_component.register_callbacks(app, prediction_table)
+    glucose_chart.register_callbacks(app)
+    submit_component.register_callbacks(app)
+    landing_page.register_callbacks(app)
+    startup_page.register_callbacks(app)
+    ending_page.register_callbacks(app)
+
+
+# Create typer app.  invoke_without_command + the @cli.callback default
+# mean ``uv run start`` (no subcommand) still works, while ``uv run chart``
+# routes to the ``chart`` subcommand via its own entrypoint.
+cli = typer.Typer(invoke_without_command=True)
+
+@cli.callback(invoke_without_command=True)
 def main(
+    typer_ctx: typer.Context,
     debug: Optional[bool] = typer.Option(None, "--debug", help="Enable debug mode to show test button"),
     host: Optional[str] = typer.Option(None, "--host", help="Host to run the server on"),
     port: Optional[int] = typer.Option(None, "--port", help="Port to run the server on")
@@ -3371,27 +3476,16 @@ def main(
     ``--debug`` / ``--no-debug`` is passed, Dash ``debug`` follows it and
     ``config.DEBUG_MODE`` is updated so in-app debug (e.g. test button) stays in sync.
     """
+    if typer_ctx.invoked_subcommand is not None:
+        return
+
     dash_host = DASH_HOST if host is None else (host or DASH_HOST)
     dash_port = DASH_PORT if port is None else port
     dash_debug = DASH_DEBUG if debug is None else debug
     if debug is not None:
         sugar_sugar_config.DEBUG_MODE = debug
 
-    # Create components after setting debug mode (when CLI passed --debug)
-    global startup_page
-    global landing_page
-    landing_page = LandingPage()
-    startup_page = StartupPage()
-    
-    prediction_table.register_callbacks(app)  # Register the prediction table callbacks
-    metrics_component.register_callbacks(app, prediction_table)  # Register the metrics component callbacks
-    glucose_chart.register_callbacks(app)  # Register the glucose chart callbacks
-    submit_component.register_callbacks(app)  # Register the submit component callbacks
-    landing_page.register_callbacks(app)  # Register landing page callbacks
-    startup_page.register_callbacks(app)  # Register the startup page callbacks
-    ending_page.register_callbacks(app)  # Register the ending page callbacks
-    
-    # Initial content: landing page (routing callback will handle the rest)
+    _register_all_callbacks()
     app.layout.children[-1].children = [landing_page]
     
     with start_action(
@@ -3402,9 +3496,70 @@ def main(
     ):
         app.run(host=dash_host, port=dash_port, debug=dash_debug)
 
+@cli.command()
+def chart(
+    file: Optional[Path] = typer.Option(None, "--file", "-f", help="CSV file to load (Dexcom/Libre/Medtronic). Default: built-in example."),
+    points: int = typer.Option(DEFAULT_POINTS, "--points", "-p", help="Number of data points in the window"),
+    start: Optional[int] = typer.Option(None, "--start", "-s", help="Start index for the data window (default: random)"),
+    unit: str = typer.Option("mg/dL", "--unit", "-u", help="Glucose unit: mg/dL or mmol/L"),
+    locale: str = typer.Option("en", "--locale", "-l", help="UI locale (en, de, uk, ro)"),
+    prefill: bool = typer.Option(False, "--prefill", help="Pre-fill predictions with noisy ground truth so submit/ending can be tested immediately"),
+    noise: float = typer.Option(0.05, "--noise", help="Noise level for --prefill (fraction of gl value, e.g. 0.05 = +/-5%%)"),
+    host: Optional[str] = typer.Option(None, "--host", help="Host to run the server on"),
+    port: Optional[int] = typer.Option(None, "--port", help="Port to run the server on"),
+) -> None:
+    """Dev shortcut: load data and jump straight to the prediction chart.
+
+    Bypasses landing, startup, and consent pages. Equivalent to filling in the
+    form, clicking "Just Test Me", and pressing "Start Prediction" -- but
+    instant.  Accepts an external CSV so you can iterate on real data without
+    uploading through the UI every time.
+
+    With --prefill the prediction region is filled with noisy ground-truth
+    values so you can test submit/ending/metrics without drawing.
+    """
+    # Set env vars so the module-level data loading picks them up on
+    # Werkzeug debug-reloader re-imports.
+    os.environ["_CHART_MODE"] = "1"
+    if file:
+        os.environ["_CHART_FILE"] = str(file)
+    os.environ["_CHART_POINTS"] = str(points)
+    if start is not None:
+        os.environ["_CHART_START"] = str(start)
+    os.environ["_CHART_UNIT"] = unit if unit in ("mg/dL", "mmol/L") else "mg/dL"
+    os.environ["_CHART_LOCALE"] = normalize_locale(locale)
+    os.environ["_CHART_SOURCE"] = file.name if file else "example.csv"
+    if prefill:
+        os.environ["_CHART_PREFILL"] = "1"
+        os.environ["_CHART_NOISE"] = str(noise)
+
+    sugar_sugar_config.DEBUG_MODE = True
+
+    _register_all_callbacks()
+
+    dash_host = DASH_HOST if host is None else (host or DASH_HOST)
+    dash_port = DASH_PORT if port is None else port
+
+    with start_action(
+        action_type=u"start_chart_dev",
+        file=str(file) if file else "example.csv",
+        points=points,
+        prefill=prefill,
+        host=dash_host,
+        port=dash_port,
+    ):
+        app.run(host=dash_host, port=dash_port, debug=True)
+
+
 def cli_main() -> None:
     """CLI entry point"""
     cli()
+
+
+def chart_main() -> None:
+    """CLI entry point that defaults to the ``chart`` command."""
+    cli(["chart"] + sys.argv[1:])
+
 
 if __name__ == '__main__':
     cli()
