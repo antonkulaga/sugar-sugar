@@ -204,6 +204,14 @@ de:
     absolute_error: "Absoluter Fehler"
     relative_error_pct: "Relativer Fehler (%{pct})"
 
+  resume_dialog:
+    title: "Willkommen zurück!"
+    message: "Du hast eine frühere Sitzung gespeichert (Runde %{round} von %{total}). Möchtest du dort weitermachen oder von vorne beginnen?"
+    message_no_round: "Du hast eine frühere Sitzung gespeichert. Möchtest du dort weitermachen oder von vorne beginnen?"
+    warning: "Bitte starte nicht neu, nur weil du mit deinen Vorhersagen unzufrieden bist — ein Neustart verfälscht die Forschungsdaten und beeinträchtigt die Studienergebnisse."
+    continue_btn: "Weiter"
+    start_over_btn: "Neu starten"
+
   session_expired:
     title: "Sitzung abgelaufen"
     text: "Bitte von vorne beginnen."
@@ -216,6 +224,7 @@ de:
     view_complete_analysis: "Komplette Analyse ansehen"
     graph_explanation: "Das Diagramm zeigt das Glukosfenster, das Sie vorhergesagt haben. Die orangefarbene gestrichelte Linie trennt die bekannte Vorgeschichte (links) von der vorhergesagten Stunde (rechts). Ihre Vorhersagen sind rot dargestellt."
     data_source_label: "Datenquelle: %{source}"
+    round_motivation: "Du kannst jederzeit aufhören, aber alle %{total} Runden liefern die besten Daten. Mindestens %{min_useful} Runden sind für brauchbare Ergebnisse nötig — jede weitere Runde hilft!"
     local_storage_note: "Dein Fortschritt wird lokal in diesem Browser gespeichert. Du kannst eine Pause einlegen und später im selben Browser fortfahren."
 
   final:

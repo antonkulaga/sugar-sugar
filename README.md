@@ -124,6 +124,45 @@ uv run chart --unit mmol/L --locale de
 uv run chart --host 0.0.0.0 --port 3000
 ```
 
+### Testing & Development Tips
+
+#### Clearing localStorage
+
+When `STORAGE_TYPE=local` (the default), all session data persists in the browser's `localStorage`. This is great for users but can get in the way during development — old state from a previous run may interfere with the feature you are testing. Use the `--clean` flag to wipe `localStorage` for every browser that connects:
+
+```bash
+uv run start --clean
+```
+
+While the server is running with `--clean`, every page load (including refreshes and new tabs) will call `localStorage.clear()` before anything else. Stop the server and restart without `--clean` to go back to normal persistence.
+
+You can also clear storage manually in the browser via **DevTools → Application → Local Storage → Clear All**.
+
+#### Testing the session resume dialog
+
+The resume dialog only appears when `STORAGE_TYPE=local` and the browser already has a saved session from a previous visit. To test it end-to-end:
+
+1. Start the app normally:
+   ```bash
+   uv run start
+   ```
+2. Walk through at least the landing and startup pages so that `localStorage` stores your progress (watch for `last-visited-page` in DevTools → Application → Local Storage).
+3. Close the browser tab (do **not** stop the server).
+4. Open `http://127.0.0.1:8050/` again — the resume dialog should appear with **Continue** / **Start Over** buttons and a warning about research data integrity.
+
+For a faster loop, use `uv run chart --prefill` to get all the way to a submittable prediction in one step, submit the round, then close and reopen the tab.
+
+#### Testing the full submit / ending / metrics flow
+
+Drawing predictions by hand is slow. Use `--prefill` to populate the prediction region with noisy ground-truth values so you can immediately submit:
+
+```bash
+uv run chart --prefill                  # default ±5% noise
+uv run chart --prefill --noise 0.10     # ±10% noise
+```
+
+This bypasses landing, startup, and consent, pre-fills user info, and auto-populates predictions — you land directly on the chart page ready to click **Submit**.
+
 ## KNOWN ISSUES:
 
 - Currently only Dexcom and Libre 3 are supported. We will add support for other CGM devices soon.
@@ -271,12 +310,32 @@ sugar_sugar/
 
 ### State Management Architecture
 
-The application uses Dash's session storage (`dcc.Store`) for state management:
+The application uses Dash's `dcc.Store` components for state management. The storage backend is controlled by the `STORAGE_TYPE` environment variable:
 
-- **Session Isolation**: Each user gets independent session storage
+| Value | Behaviour |
+|-------|-----------|
+| `local` (default) | Data persists in `localStorage` — survives browser restarts and tab closes. |
+| `session` | Data persists in `sessionStorage` — cleared when the tab is closed. |
+| `memory` | Data lives only in Dash's in-memory React state — cleared on any page refresh. |
+
+- **Session Isolation**: Each browser gets its own storage namespace
 - **Data Persistence**: User state maintained across page navigation
 - **Component Communication**: Centralized state updates trigger component re-renders
-- **Memory Efficiency**: Automatic cleanup when sessions end
+
+#### Session Resume Dialog (`STORAGE_TYPE=local`)
+
+When `STORAGE_TYPE=local`, user progress survives browser restarts. On the next visit the app detects the saved session and shows a **resume dialog** instead of silently redirecting:
+
+1. A clientside callback persists the current page path into a `last-visited-page` store every time the user navigates.
+2. On the very first page load, `restore_page_on_load` fires when localStorage hydrates `last-visited-page`. If the stored page is not `/` (landing), the callback computes the best restorable target (falling back to an earlier page when required data is missing) and writes it to `resume-dialog-target`.
+3. `render_resume_dialog` renders a centered modal overlay showing the user's round progress and two buttons:
+   - **Continue** — navigates to the stored target page; all session data is intact.
+   - **Start Over** — resets every in-memory `dcc.Store` to its default value **and** triggers the `clean-storage-flag` clientside callback, which calls `localStorage.clear()` and self-resets. The user is taken back to the landing/consent page for a fresh start.
+4. The dialog includes a warning discouraging users from restarting just because they are unhappy with their predictions, since that would skew research data.
+
+The same `clean-storage-flag` mechanism is reused by the `--clean` CLI flag (`uv run start --clean`), which sets the flag at startup so every connecting browser gets its storage wiped.
+
+> **Note for researchers:** The "Start Over" option is intentionally kept available (users must not feel trapped), but the warning makes it clear that restarting undermines research integrity. The dialog is only shown when a prior session actually exists — first-time visitors go straight to the landing page.
 
 ### Key Technical Features
 

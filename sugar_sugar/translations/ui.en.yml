@@ -203,6 +203,14 @@ en:
     absolute_error: "Absolute Error"
     relative_error_pct: "Relative Error (%{pct})"
 
+  resume_dialog:
+    title: "Welcome back!"
+    message: "You have a previous session saved (round %{round} of %{total}). Would you like to continue where you left off or start over?"
+    message_no_round: "You have a previous session saved. Would you like to continue where you left off or start over?"
+    warning: "Please do not start over just because you are unhappy with your predictions — restarting skews the research data and undermines the study results."
+    continue_btn: "Continue"
+    start_over_btn: "Start Over"
+
   session_expired:
     title: "Session Expired"
     text: "Please start over from the beginning."
@@ -215,6 +223,7 @@ en:
     view_complete_analysis: "View complete analysis"
     graph_explanation: "The chart shows the glucose window you predicted on. The orange dashed line separates the known history (left) from the hour you predicted (right). Your predictions are shown in red."
     data_source_label: "Data source: %{source}"
+    round_motivation: "You can stop any time, but completing all %{total} rounds gives the best data. At least %{min_useful} rounds are needed for useful results — every extra round helps!"
     local_storage_note: "Your progress is saved locally in this browser. You can take a break and resume later using the same browser."
 
   final:

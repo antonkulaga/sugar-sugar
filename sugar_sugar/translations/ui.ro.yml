@@ -204,6 +204,14 @@ ro:
     absolute_error: "Eroare absolută"
     relative_error_pct: "Eroare relativă (%{pct})"
 
+  resume_dialog:
+    title: "Bine ai revenit!"
+    message: "Ai o sesiune anterioară salvată (runda %{round} din %{total}). Dorești să continui de unde ai rămas sau să reîncepi?"
+    message_no_round: "Ai o sesiune anterioară salvată. Dorești să continui de unde ai rămas sau să reîncepi?"
+    warning: "Te rugăm să nu reîncepi doar pentru că nu ești mulțumit de predicțiile tale — repornirea denaturează datele de cercetare și afectează rezultatele studiului."
+    continue_btn: "Continuă"
+    start_over_btn: "Reîncepe"
+
   session_expired:
     title: "Sesiune expirată"
     text: "Te rugăm să reîncepi de la început."
@@ -216,6 +224,7 @@ ro:
     view_complete_analysis: "Vezi analiza completă"
     graph_explanation: "Graficul arată fereastra de glucoză pe care ai prezis-o. Linia portocalie punctată separă istoricul cunoscut (stânga) de ora pe care ai prezis-o (dreapta). Predicțiile tale sunt afișate cu roșu."
     data_source_label: "Sursa datelor: %{source}"
+    round_motivation: "Poți opri oricând, dar completarea tuturor celor %{total} runde oferă cele mai bune date. Cel puțin %{min_useful} runde sunt necesare pentru rezultate utile — fiecare rundă suplimentară ajută!"
     local_storage_note: "Progresul tău este salvat local în acest browser. Poți lua o pauză și relua mai târziu folosind același browser."
 
   final:

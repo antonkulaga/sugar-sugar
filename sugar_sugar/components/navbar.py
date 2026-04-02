@@ -22,6 +22,7 @@ class NavBar(html.Div):
                 "justifyContent": "flex-start",
                 "marginBottom": "20px",
             },
+            disable_n_clicks=True,
         )
 
     def _create_navbar(self) -> list:
@@ -37,6 +38,7 @@ class NavBar(html.Div):
                 "fontWeight": "600",
                 "fontSize": "14px",
             },
+            disable_n_clicks=True,
         )
 
         home_button = html.A(
@@ -49,6 +51,7 @@ class NavBar(html.Div):
                 "fontSize": "14px",
                 "marginLeft": "8px",
             },
+            disable_n_clicks=True,
         )
 
         about_button = html.A(
@@ -61,6 +64,7 @@ class NavBar(html.Div):
                 "fontSize": "14px",
                 "marginLeft": "8px",
             },
+            disable_n_clicks=True,
         )
 
         contact_button = html.A(
@@ -73,6 +77,7 @@ class NavBar(html.Div):
                 "fontSize": "14px",
                 "marginLeft": "8px",
             },
+            disable_n_clicks=True,
         )
 
         demo_button = html.A(
@@ -85,6 +90,7 @@ class NavBar(html.Div):
                 "fontSize": "14px",
                 "marginLeft": "8px",
             },
+            disable_n_clicks=True,
         )
 
         return [back_button, home_button, about_button, contact_button, demo_button]
@@ -95,7 +101,6 @@ def get_navbar_back_href(pathname: Optional[str]) -> str:
     if not pathname:
         pathname = "/"
 
-    # Navigation mapping: from page -> back to page
     back_map = {
         "/consent-form": "/",
         "/startup": "/",

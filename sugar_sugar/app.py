@@ -319,7 +319,7 @@ else:
     _chart_user_info = None
 
 app.layout = html.Div([
-    dcc.Location(id='url', refresh=False, pathname="/prediction" if _is_chart_mode else "/"),
+    dcc.Location(id='url', refresh=False, **({'pathname': '/prediction'} if _is_chart_mode else {})),
     dcc.Store(id='user-info-store', data=_chart_user_info, storage_type=STORAGE_TYPE),
     dcc.Store(id='last-click-time', data=0),
     dcc.Store(id='consent-scroll-request', data=0),
@@ -340,9 +340,13 @@ app.layout = html.Div([
     dcc.Store(id='page-restore-done', data=False, storage_type='memory'),
     # Set to True by --clean flag; consumed once by a clientside callback to wipe localStorage.
     dcc.Store(id='clean-storage-flag', data=_clean_storage, storage_type='memory'),
+    # Holds the target page for the resume dialog; set by restore_page_on_load.
+    dcc.Store(id='resume-dialog-target', data=None, storage_type='memory'),
 
     html.Div(id='mobile-warning', style={'margin': '12px 0'}),
     html.Div(id='scroll-to-top-trigger', style={'display': 'none'}),
+
+    html.Div(id='resume-dialog-container', children=[], disable_n_clicks=True),
 
     html.Div(id='navbar-container', children=[], disable_n_clicks=True),
     
@@ -554,6 +558,7 @@ def create_landing_navbar(*, locale: str) -> html.Div:
             "fontWeight": "600",
             "fontSize": "14px",
         },
+        disable_n_clicks=True,
     )
 
     contact_button = html.A(
@@ -566,6 +571,7 @@ def create_landing_navbar(*, locale: str) -> html.Div:
             "fontSize": "14px",
             "marginLeft": "8px",
         },
+        disable_n_clicks=True,
     )
 
     demo_button = html.A(
@@ -578,6 +584,7 @@ def create_landing_navbar(*, locale: str) -> html.Div:
             "fontSize": "14px",
             "marginLeft": "8px",
         },
+        disable_n_clicks=True,
     )
 
     return html.Div(
@@ -591,6 +598,7 @@ def create_landing_navbar(*, locale: str) -> html.Div:
             "justifyContent": "flex-start",
             "marginBottom": "20px",
         },
+        disable_n_clicks=True,
     )
 
 from dash import html
@@ -598,10 +606,11 @@ from dash import html
 def create_info_page(*, locale: str, title: str, body: str) -> html.Div:
     return html.Div(
         [
-            html.H1(title),
-            html.Div(body, style={"marginBottom": "14px"}),
+            html.H1(title, disable_n_clicks=True),
+            html.Div(body, style={"marginBottom": "14px"}, disable_n_clicks=True),
         ],
-        className="info-page"
+        className="info-page",
+        disable_n_clicks=True,
     )
 
 @lru_cache(maxsize=4)
@@ -664,7 +673,7 @@ def create_about_page(*, locale: str) -> html.Div:
                 ),
             ]
         )
-    return html.Div(children, className="info-page")
+    return html.Div(children, className="info-page", disable_n_clicks=True)
 
 
 def create_contact_page(*, locale: str) -> html.Div:
@@ -838,7 +847,7 @@ def create_contact_page(*, locale: str) -> html.Div:
             )
         )
 
-    return html.Div(page_children, className="info-page")
+    return html.Div(page_children, className="info-page", disable_n_clicks=True)
 
 
 def create_demo_page(*, locale: str) -> html.Div:
@@ -1224,10 +1233,22 @@ def create_ending_layout(
             disable_n_clicks=True,
             style={
                 'textAlign': 'center',
-                'marginBottom': '5px',
+                'marginBottom': '2px',
                 'fontSize': 'clamp(16px, 2.5vw, 22px)',
                 'fontWeight': '600',
                 'color': '#2c5282'
+            }
+        ),
+        html.Div(
+            t("ui.ending.round_motivation", locale=locale, total=max_rounds, min_useful=max(1, max_rounds // 2)),
+            disable_n_clicks=True,
+            style={
+                'textAlign': 'center',
+                'marginBottom': '5px',
+                'color': '#4a5568',
+                'fontSize': '13px',
+                'fontStyle': 'italic',
+                'display': 'none' if is_last_round else 'block',
             }
         ),
         html.Div(
@@ -2463,19 +2484,20 @@ def handle_back_to_final_from_upload(n_clicks: Optional[int]) -> Tuple[str, Dict
      Output('glucose-chart-mode', 'data', allow_duplicate=True),
      Output('randomization-initialized', 'data', allow_duplicate=True),
      Output('glucose-unit', 'data', allow_duplicate=True),
-     Output('interface-language', 'data', allow_duplicate=True)],
+     Output('interface-language', 'data', allow_duplicate=True),
+     Output('last-visited-page', 'data', allow_duplicate=True)],
     [Input('restart-button', 'n_clicks')],
     prevent_initial_call=True
 )
-def handle_restart_button(n_clicks: Optional[int]) -> Tuple[str, None, Dict[str, bool], bool, str, str]:
+def handle_restart_button(n_clicks: Optional[int]) -> Tuple[str, None, Dict[str, bool], bool, str, str, None]:
     """Handle restart button - navigate to start and clear user info. Data reset handled elsewhere."""
     print(f"DEBUG handle_restart_button FIRED: n_clicks={n_clicks}")
     if n_clicks:
         with start_action(action_type=u"handle_restart_button") as action:
             action.log(message_type="restart_clicked")
         chart_mode = {'hide_last_hour': True}
-        return '/', None, chart_mode, False, 'mg/dL', 'en'
-    return no_update, no_update, no_update, no_update, no_update, no_update
+        return '/', None, chart_mode, False, 'mg/dL', 'en', None
+    return no_update, no_update, no_update, no_update, no_update, no_update, no_update
 
 
 @app.callback(
@@ -2705,8 +2727,9 @@ app.clientside_callback(
         return false;
     }
     """,
-    Output('clean-storage-flag', 'data'),
+    Output('clean-storage-flag', 'data', allow_duplicate=True),
     [Input('clean-storage-flag', 'data')],
+    prevent_initial_call='initial_duplicate',
 )
 
 # --- Page-restore logic for STORAGE_TYPE=local ---
@@ -2751,7 +2774,7 @@ app.clientside_callback(
 
 
 @app.callback(
-    [Output('url', 'pathname', allow_duplicate=True),
+    [Output('resume-dialog-target', 'data'),
      Output('page-restore-done', 'data')],
     [Input('last-visited-page', 'data')],
     [State('page-restore-done', 'data'),
@@ -2766,11 +2789,12 @@ def restore_page_on_load(
     pathname: Optional[str],
     user_info: Optional[Dict[str, Any]],
     full_df_data: Optional[Dict],
-) -> Tuple[str, bool]:
-    """On very first render, redirect to the page the user was last on (local storage).
+) -> Tuple[Optional[Dict[str, Any]], bool]:
+    """Show a resume-or-start-over dialog when a prior session is detected.
 
-    Fires when localStorage hydrates ``last-visited-page``.  The memory-backed
-    ``page-restore-done`` flag ensures it only acts once per browser tab.
+    Instead of auto-redirecting, we compute the best target page and store it
+    in ``resume-dialog-target``.  A separate callback renders the dialog UI
+    and handles the user's choice.
     """
     if already_done or _is_chart_mode:
         raise PreventUpdate
@@ -2778,37 +2802,225 @@ def restore_page_on_load(
     if not last_page or last_page == "/":
         return no_update, True
 
+    # Only show the resume dialog when the user landed on the root page.
+    # If they navigated to /demo, /contact, /about etc. let them be.
+    if pathname and pathname != "/":
+        return no_update, True
+
+    rounds_played = 0
+    current_round = 0
+    if user_info:
+        rounds_played = len(user_info.get('rounds') or [])
+        current_round = int(user_info.get('current_round_number') or (rounds_played + 1))
+
     with start_action(action_type=u"restore_page_on_load", last_page=last_page, has_user_info=user_info is not None) as action:
+        target: Optional[str] = None
+
         if last_page == "/startup":
-            action.log(message_type="restoring", target="/startup")
-            return "/startup", True
+            target = "/startup"
 
-        if last_page == "/prediction":
-            if user_info:
-                action.log(message_type="restoring", target="/prediction")
-                return "/prediction", True
-            action.log(message_type="fallback", target="/startup", reason="no user_info")
-            return "/startup", True
+        elif last_page == "/prediction":
+            target = "/prediction" if user_info else "/startup"
 
-        if last_page == "/ending":
+        elif last_page == "/ending":
             has_prediction_data = bool(user_info and "prediction_table_data" in user_info)
             if has_prediction_data and full_df_data:
-                action.log(message_type="restoring", target="/ending")
-                return "/ending", True
+                target = "/ending"
+            elif user_info:
+                target = "/prediction"
+
+        elif last_page == "/final":
             if user_info:
-                action.log(message_type="fallback", target="/prediction", reason="no prediction data")
-                return "/prediction", True
-            action.log(message_type="fallback", target="/", reason="no session data")
+                target = "/final"
+
+        if target is None:
+            action.log(message_type="no_restorable_target", last_page=last_page)
             return no_update, True
 
-        if last_page == "/final":
-            if user_info:
-                action.log(message_type="restoring", target="/final")
-                return "/final", True
-            action.log(message_type="fallback", target="/", reason="no user_info")
-            return no_update, True
+        action.log(message_type="showing_resume_dialog", target=target, current_round=current_round)
+        dialog_data = {
+            "target": target,
+            "current_round": current_round,
+            "max_rounds": MAX_ROUNDS,
+        }
+        return dialog_data, True
 
     return no_update, True
+
+
+# --- Resume dialog: render, continue, start-over ---
+
+@app.callback(
+    Output('resume-dialog-container', 'children'),
+    [Input('resume-dialog-target', 'data'),
+     Input('interface-language', 'data')],
+    prevent_initial_call=True,
+)
+def render_resume_dialog(
+    dialog_data: Optional[Dict[str, Any]],
+    interface_language: Optional[str],
+) -> List:
+    """Render the resume-or-start-over modal when a prior session is detected."""
+    if not dialog_data or not dialog_data.get("target"):
+        return []
+
+    locale = normalize_locale(interface_language)
+    current_round = dialog_data.get("current_round", 0)
+    max_rounds = dialog_data.get("max_rounds", MAX_ROUNDS)
+
+    if current_round > 0:
+        message = t("ui.resume_dialog.message", locale=locale, round=current_round, total=max_rounds)
+    else:
+        message = t("ui.resume_dialog.message_no_round", locale=locale)
+
+    overlay_style = {
+        'position': 'fixed',
+        'top': 0,
+        'left': 0,
+        'width': '100vw',
+        'height': '100vh',
+        'backgroundColor': 'rgba(0,0,0,0.55)',
+        'display': 'flex',
+        'alignItems': 'center',
+        'justifyContent': 'center',
+        'zIndex': 10000,
+    }
+    card_style = {
+        'backgroundColor': '#fff',
+        'borderRadius': '12px',
+        'padding': '36px 40px',
+        'maxWidth': '480px',
+        'width': '90vw',
+        'boxShadow': '0 8px 32px rgba(0,0,0,0.25)',
+        'textAlign': 'center',
+    }
+    title_style = {
+        'fontSize': '24px',
+        'fontWeight': 'bold',
+        'marginBottom': '16px',
+        'color': '#333',
+    }
+    message_style = {
+        'fontSize': '16px',
+        'lineHeight': '1.5',
+        'color': '#555',
+        'marginBottom': '28px',
+    }
+    buttons_style = {
+        'display': 'flex',
+        'gap': '16px',
+        'justifyContent': 'center',
+    }
+
+    warning_style = {
+        'fontSize': '13px',
+        'lineHeight': '1.4',
+        'color': '#b5600a',
+        'backgroundColor': '#fff8f0',
+        'border': '1px solid #f0c88a',
+        'borderRadius': '6px',
+        'padding': '10px 14px',
+        'marginBottom': '24px',
+        'textAlign': 'left',
+    }
+
+    return [html.Div([
+        html.Div([
+            html.Div(
+                t("ui.resume_dialog.title", locale=locale),
+                style=title_style,
+                disable_n_clicks=True,
+            ),
+            html.Div(message, style=message_style, disable_n_clicks=True),
+            html.Div(
+                t("ui.resume_dialog.warning", locale=locale),
+                style=warning_style,
+                disable_n_clicks=True,
+            ),
+            html.Div([
+                html.Button(
+                    t("ui.resume_dialog.start_over_btn", locale=locale),
+                    id='resume-start-over-btn',
+                    className='ui red button',
+                    style={'minWidth': '140px'},
+                ),
+                html.Button(
+                    t("ui.resume_dialog.continue_btn", locale=locale),
+                    id='resume-continue-btn',
+                    className='ui green button',
+                    style={'minWidth': '140px'},
+                ),
+            ], style=buttons_style, disable_n_clicks=True),
+        ], style=card_style, disable_n_clicks=True),
+    ], style=overlay_style, disable_n_clicks=True)]
+
+
+@app.callback(
+    [Output('url', 'pathname', allow_duplicate=True),
+     Output('resume-dialog-container', 'children', allow_duplicate=True)],
+    [Input('resume-continue-btn', 'n_clicks')],
+    [State('resume-dialog-target', 'data')],
+    prevent_initial_call=True,
+)
+def handle_resume_continue(
+    n_clicks: Optional[int],
+    dialog_data: Optional[Dict[str, Any]],
+) -> Tuple[str, List]:
+    """Navigate to the saved page when the user clicks Continue."""
+    if not n_clicks or not dialog_data:
+        raise PreventUpdate
+    target = dialog_data.get("target", "/")
+    with start_action(action_type=u"resume_continue", target=target) as action:
+        action.log(message_type="user_chose_continue")
+    return target, []
+
+
+@app.callback(
+    [Output('url', 'pathname', allow_duplicate=True),
+     Output('resume-dialog-container', 'children', allow_duplicate=True),
+     Output('resume-dialog-target', 'data', allow_duplicate=True),
+     Output('user-info-store', 'data', allow_duplicate=True),
+     Output('glucose-chart-mode', 'data', allow_duplicate=True),
+     Output('randomization-initialized', 'data', allow_duplicate=True),
+     Output('glucose-unit', 'data', allow_duplicate=True),
+     Output('interface-language', 'data', allow_duplicate=True),
+     Output('last-visited-page', 'data', allow_duplicate=True),
+     Output('full-df', 'data', allow_duplicate=True),
+     Output('current-window-df', 'data', allow_duplicate=True),
+     Output('events-df', 'data', allow_duplicate=True),
+     Output('is-example-data', 'data', allow_duplicate=True),
+     Output('data-source-name', 'data', allow_duplicate=True),
+     Output('initial-slider-value', 'data', allow_duplicate=True),
+     Output('clean-storage-flag', 'data', allow_duplicate=True)],
+    [Input('resume-start-over-btn', 'n_clicks')],
+    prevent_initial_call=True,
+)
+def handle_resume_start_over(
+    n_clicks: Optional[int],
+) -> tuple:
+    """Reset all in-memory stores and trigger the clean-storage-flag to wipe localStorage."""
+    if not n_clicks:
+        raise PreventUpdate
+    with start_action(action_type=u"resume_start_over") as action:
+        action.log(message_type="user_chose_start_over")
+    return (
+        "/",                       # url pathname
+        [],                        # resume-dialog-container
+        None,                      # resume-dialog-target
+        None,                      # user-info-store
+        {'hide_last_hour': True},  # glucose-chart-mode
+        False,                     # randomization-initialized
+        'mg/dL',                   # glucose-unit
+        'en',                      # interface-language
+        None,                      # last-visited-page
+        None,                      # full-df
+        None,                      # current-window-df
+        None,                      # events-df
+        True,                      # is-example-data
+        'example.csv',             # data-source-name
+        None,                      # initial-slider-value
+        True,                      # clean-storage-flag (self-resets via clientside callback)
+    )
 
 
 ## Removed URL-based data writer callback to enforce single-writer for data stores
