@@ -53,12 +53,20 @@ The app forces a desktop-width layout viewport (`_DESKTOP_LAYOUT_VIEWPORT_CSS_PX
 - Keep `logs/*` with `!logs/.gitkeep` in `.gitignore` to preserve the directory in git while ignoring log files; `.cursor/` must be fully gitignored
 - The UI uses Fomantic UI (Semantic UI fork) classes alongside Dash — prefix interactive classes with `ui` (e.g. `ui green button`)
 
+## Browser automation tips (cursor-ide-browser MCP)
+
+- Elements with `disable_n_clicks=True` (including language flags and navbar wrappers) do **not** appear as interactive refs in `browser_snapshot`. You cannot click them by ref.
+- CSS-selector-based clicks (`browser_click` with `selector: "#some-id"`) also fail on elements with `disable_n_clicks=True` — the Dash attribute strips the React event handlers the browser tool relies on.
+- **Workaround that works:** Use `browser_navigate` with a `javascript:void(...)` URL to programmatically click the element via the DOM: `javascript:void(document.getElementById('lang-de').click())`. This bypasses the missing React handlers and fires the Dash callback correctly.
+- Coordinate-based clicks (`browser_click` with `coordinates`) fail when the element is outside the default viewport (1024 px wide). Use `browser_resize` first, or prefer the JS workaround above.
+- `browser_screenshot` does not exist; the correct tool name is `browser_take_screenshot`.
+
 ## Learned Workspace Facts
 
 - The app uses Fomantic UI CSS/JS loaded via `external_stylesheets` and `external_scripts` (jQuery is loaded first as a dependency)
 - GitHub repo is GlucoseDAO/sugar-sugar; issues are tracked there
 - `suppress_callback_exceptions=True` is set on the Dash app to allow callbacks referencing components not yet in the layout
-- The navbar back-button uses `html.A` with `href`; the callback wired to `navbar-back-link` is effectively dead code (component id is `navbar-back-button`)
+- The navbar is a Fomantic UI `massive blue inverted tabular menu` (`NavBar` class in `sugar_sugar/components/navbar.py`). Left items: Game, The Study, Video instructions, Contact us. Right items: language flags. The active tab is highlighted via a CSS bottom-border rule.
 - The consent/landing page requires scrolling the participant text to the bottom before checkboxes become interactive (enforced by `dcc.Interval` polling)
 - `STORAGE_TYPE` env var controls `dcc.Store` `storage_type` and input `persistence_type` across the app; defaults to `local` (localStorage persists across sessions)
 - `dcc.Markdown` was replaced with server-side Python `markdown` lib + `html.Iframe(srcDoc=...)` in `static_markdown.py` to avoid React 18 async-markdown warnings

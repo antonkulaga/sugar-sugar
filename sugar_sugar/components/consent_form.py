@@ -40,7 +40,7 @@ class ConsentFormPage(html.Div):
                                         ),
                                         html.Hr(style={"margin": "18px 0"}),
                                         html.A(
-                                            t("ui.common.back", locale=locale),
+                                            t("ui.common.go_to_start", locale=locale),
                                             href="/",
                                             className="ui basic secondary button",
                                             style={"fontWeight": "800", "marginBottom": "14px"},

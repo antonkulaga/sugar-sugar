@@ -372,6 +372,7 @@ def reset_glucose_unit_on_start_page(pathname: Optional[str]) -> str:
      Input('lang-de', 'n_clicks'),
      Input('lang-uk', 'n_clicks'),
      Input('lang-ro', 'n_clicks')],
+    [State('interface-language', 'data')],
     prevent_initial_call=True
 )
 def set_interface_language(
@@ -379,19 +380,20 @@ def set_interface_language(
     n_de: Optional[int],
     n_uk: Optional[int],
     n_ro: Optional[int],
+    current_language: Optional[str],
 ) -> str:
-    """Set the interface language (session-scoped) from landing page flag buttons."""
-    _ = (n_en, n_de, n_uk, n_ro)
+    """Set the interface language from navbar flag buttons."""
     triggered = ctx.triggered_id
-    if triggered == 'lang-en':
-        return 'en'
-    if triggered == 'lang-de':
-        return 'de'
-    if triggered == 'lang-uk':
-        return 'uk'
-    if triggered == 'lang-ro':
-        return 'ro'
-    raise PreventUpdate
+    if not triggered:
+        raise PreventUpdate
+    click_value = {'lang-en': n_en, 'lang-de': n_de, 'lang-uk': n_uk, 'lang-ro': n_ro}.get(triggered)
+    if not click_value:
+        raise PreventUpdate
+    lang_map = {'lang-en': 'en', 'lang-de': 'de', 'lang-uk': 'uk', 'lang-ro': 'ro'}
+    new_lang = lang_map.get(triggered)
+    if not new_lang or new_lang == current_language:
+        raise PreventUpdate
+    return new_lang
 
 
 @app.callback(
@@ -448,13 +450,58 @@ def update_prediction_uploaded_data_consent_ui(
     )
 
 
+_STATEFUL_PAGES = frozenset({'/prediction', '/ending', '/final'})
+
+
+@app.callback(
+    [Output('page-content', 'children', allow_duplicate=True),
+     Output('mobile-warning', 'children', allow_duplicate=True),
+     Output('navbar-container', 'children', allow_duplicate=True)],
+    [Input('interface-language', 'data')],
+    [State('url', 'pathname'),
+     State('user-info-store', 'data'),
+     State('user-agent', 'data')],
+    prevent_initial_call=True,
+)
+def update_on_language_change(
+    interface_language: Optional[str],
+    pathname: Optional[str],
+    user_info: Optional[Dict[str, Any]],
+    user_agent: Optional[str],
+) -> tuple:
+    """Re-render page content and navbar when language changes.
+
+    Pages with interactive state (prediction chart, ending, final) only get
+    a navbar refresh -- page content is left untouched.
+    """
+    locale = normalize_locale(interface_language)
+    navbar = NavBar(locale=locale, current_page=pathname or "/")
+
+    if pathname in _STATEFUL_PAGES:
+        return no_update, no_update, navbar
+
+    warning_content = render_mobile_warning(user_agent, locale=locale)
+    if pathname == "/consent-form":
+        return ConsentFormPage(locale=locale), warning_content, navbar
+    if pathname == '/startup':
+        return StartupPage(locale=locale), warning_content, navbar
+    if pathname == '/about':
+        return create_about_page(locale=locale), warning_content, navbar
+    if pathname == '/contact':
+        return create_contact_page(locale=locale), warning_content, navbar
+    if pathname == '/demo':
+        return create_demo_page(locale=locale), warning_content, navbar
+    # Landing page
+    return LandingPage(locale=locale), warning_content, navbar
+
+
 @app.callback(
     [Output('page-content', 'children'),
      Output('mobile-warning', 'children'),
      Output('navbar-container', 'children')],
-    [Input('url', 'pathname'),
-     Input('interface-language', 'data')],
-    [State('user-info-store', 'data'),
+    [Input('url', 'pathname')],
+    [State('interface-language', 'data'),
+     State('user-info-store', 'data'),
      State('full-df', 'data'),
      State('current-window-df', 'data'),
      State('events-df', 'data'),
@@ -472,17 +519,9 @@ def display_page(
     glucose_unit: Optional[str],
     user_agent: Optional[str],
 ) -> tuple[html.Div, Optional[html.Div], html.Div]:
-    triggered = ctx.triggered_id
     has_ptd = bool(user_info and 'prediction_table_data' in user_info) if user_info else False
     has_full = bool(full_df_data)
-    print(f"DEBUG display_page: triggered={triggered} pathname={pathname} has_user_info={user_info is not None} has_prediction_table_data={has_ptd} has_full_df={has_full} ctx.triggered={ctx.triggered}")
-    # Language buttons only exist on the landing page. If `interface-language`
-    # fires on /ending or /final it is a spurious session-store re-sync that
-    # would re-render the page while State values may be stale, producing a
-    # truncated layout.
-    if triggered == 'interface-language' and pathname in ('/ending', '/final'):
-        raise PreventUpdate
-
+    print(f"DEBUG display_page: pathname={pathname} has_user_info={user_info is not None} has_prediction_table_data={has_ptd} has_full_df={has_full}")
     locale = normalize_locale(interface_language)
     navbar = NavBar(locale=locale, current_page=pathname or "/")
     
@@ -545,61 +584,7 @@ def display_page(
         if pathname == '/demo':
             return create_demo_page(locale=locale), warning_content, navbar
         # Default route: landing page
-        return (LandingPage(locale=locale), warning_content, create_landing_navbar(locale=locale))
-
-def create_landing_navbar(*, locale: str) -> html.Div:
-    """Create a minimal navbar for the landing page with only About and Contact buttons."""
-    about_button = html.A(
-        t("ui.common.about", locale=locale),
-        id="navbar-about-button",
-        href="/about",
-        className="ui small basic button",
-        style={
-            "fontWeight": "600",
-            "fontSize": "14px",
-        },
-        disable_n_clicks=True,
-    )
-
-    contact_button = html.A(
-        t("ui.common.contact_us", locale=locale),
-        id="navbar-contact-button",
-        href="/contact",
-        className="ui small basic button",
-        style={
-            "fontWeight": "600",
-            "fontSize": "14px",
-            "marginLeft": "8px",
-        },
-        disable_n_clicks=True,
-    )
-
-    demo_button = html.A(
-        t("ui.common.demo", locale=locale),
-        id="navbar-demo-button",
-        href="/demo",
-        className="ui small basic button",
-        style={
-            "fontWeight": "600",
-            "fontSize": "14px",
-            "marginLeft": "8px",
-        },
-        disable_n_clicks=True,
-    )
-
-    return html.Div(
-        [about_button, contact_button, demo_button],
-        style={
-            "backgroundColor": "#1e88e5",
-            "padding": "12px 20px",
-            "boxShadow": "0 2px 4px rgba(0,0,0,0.1)",
-            "display": "flex",
-            "alignItems": "center",
-            "justifyContent": "flex-start",
-            "marginBottom": "20px",
-        },
-        disable_n_clicks=True,
-    )
+        return (LandingPage(locale=locale), warning_content, navbar)
 
 from dash import html
 
@@ -1036,7 +1021,7 @@ def show_upload_required_alert(
         children += [
             html.Br(),
             html.Button(
-                t("ui.common.back", locale=locale) + " → " + t("ui.final.title", locale=locale),
+                t("ui.common.game", locale=locale) + " → " + t("ui.final.title", locale=locale),
                 id="back-to-final-from-upload",
                 className="ui small button",
                 style={"paddingLeft": "0", "marginTop": "6px"},

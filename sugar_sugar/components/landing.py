@@ -37,52 +37,6 @@ class LandingPage(html.Div):
         screenshot_path = project_root / "images" / "screenshot.png"
         screenshot_src = _image_data_uri(screenshot_path)
 
-        language_picker = html.Div(
-            [
-                html.Button(
-                    [
-                        html.Img(src="/assets/flags/gb.svg", className="lang-flag"),
-                        html.Span("EN", className="lang-label"),
-                    ],
-                    id="lang-en",
-                    title="EN",
-                    **{"aria-label": "EN"},
-                    className="lang-btn" + (" active" if locale == "en" else ""),
-                ),
-                html.Button(
-                    [
-                        html.Img(src="/assets/flags/de.svg", className="lang-flag"),
-                        html.Span("DE", className="lang-label"),
-                    ],
-                    id="lang-de",
-                    title="DE",
-                    **{"aria-label": "DE"},
-                    className="lang-btn" + (" active" if locale == "de" else ""),
-                ),
-                html.Button(
-                    [
-                        html.Img(src="/assets/flags/ua.svg", className="lang-flag"),
-                        html.Span("UA", className="lang-label"),
-                    ],
-                    id="lang-uk",
-                    title="UA",
-                    **{"aria-label": "UA"},
-                    className="lang-btn" + (" active" if locale == "uk" else ""),
-                ),
-                html.Button(
-                    [
-                        html.Img(src="/assets/flags/ro.svg", className="lang-flag"),
-                        html.Span("RO", className="lang-label"),
-                    ],
-                    id="lang-ro",
-                    title="RO",
-                    **{"aria-label": "RO"},
-                    className="lang-btn" + (" active" if locale == "ro" else ""),
-                ),
-            ],
-            className="lang-picker",
-        )
-
         hero = dbc.Row(
             [
                 dbc.Col(
@@ -305,7 +259,6 @@ class LandingPage(html.Div):
 
         layout = dbc.Container(
             [
-                language_picker,
                 hero,
                 html.Div(style={"height": "18px"}),
                 study_info,

@@ -6,12 +6,11 @@ uk:
     go_to_start: "На стартову сторінку"
     loading: "Завантаження..."
     continue: "Продовжити"
-    back: "Назад"
-    home: "Головна"
+    game: "Гра"
     finish_exit: "Завершити / Вийти"
-    about: "Про нас"
+    the_study: "Дослідження"
     contact_us: "Звʼязатися"
-    demo: "Демо"
+    video_instructions: "Відеоінструкції"
 
   language:
     choose: "Мова"

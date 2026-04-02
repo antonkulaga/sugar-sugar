@@ -6,12 +6,11 @@ ro:
     go_to_start: "Mergi la pagina de start"
     loading: "Se încarcă..."
     continue: "Continuă"
-    back: "Înapoi"
-    home: "Acasă"
+    game: "Joc"
     finish_exit: "Finalizează / Ieși"
-    about: "Despre"
+    the_study: "Studiul"
     contact_us: "Contact"
-    demo: "Demo"
+    video_instructions: "Instrucțiuni video"
 
   language:
     choose: "Limbă"

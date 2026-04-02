@@ -6,12 +6,11 @@ en:
     go_to_start: "Go to Start Page"
     loading: "Loading..."
     continue: "Continue"
-    back: "Back"
-    home: "Home"
+    game: "Game"
     finish_exit: "Finish / Exit"
-    about: "About"
+    the_study: "The Study"
     contact_us: "Contact us"
-    demo: "Demo"
+    video_instructions: "Video instructions"
 
   language:
     choose: "Language"
