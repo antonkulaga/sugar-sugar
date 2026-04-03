@@ -338,6 +338,11 @@ app.layout = html.Div([
     dcc.Store(id='last-visited-page', data=None, storage_type=STORAGE_TYPE),
     # One-shot flag: prevents the restore-redirect from firing more than once per session.
     dcc.Store(id='page-restore-done', data=False, storage_type='memory'),
+    # Tracks whether the user has already interacted with the app in this browser tab.
+    # Uses sessionStorage: survives full page reloads (navbar clicks) but clears when
+    # the tab is closed.  restore_page_on_load uses this to decide whether to show the
+    # resume dialog (fresh session) or silently redirect (tab-switch-back).
+    dcc.Store(id='session-active', data=False, storage_type='session'),
     # Set to True by --clean flag; consumed once by a clientside callback to wipe localStorage.
     dcc.Store(id='clean-storage-flag', data=_clean_storage, storage_type='memory'),
     # Holds the target page for the resume dialog; set by restore_page_on_load.
@@ -2797,32 +2802,39 @@ app.clientside_callback(
     function(pathname) {
         var restorable = ["/", "/startup", "/prediction", "/ending", "/final"];
         if (restorable.indexOf(pathname) === -1) {
-            return window.dash_clientside.no_update;
+            return [window.dash_clientside.no_update, window.dash_clientside.no_update];
         }
         // On the very first render the URL is always "/".  Skip persisting "/"
         // so the restore callback can read the real stored value first.
         if (!window._sugarPagePersistReady) {
             window._sugarPagePersistReady = true;
             if (pathname === "/") {
-                return window.dash_clientside.no_update;
+                return [window.dash_clientside.no_update, window.dash_clientside.no_update];
             }
         }
-        return pathname;
+        // Mark session as active once the user navigates to any game page.
+        var active = (pathname !== "/") ? true : window.dash_clientside.no_update;
+        return [pathname, active];
     }
     """,
-    Output('last-visited-page', 'data'),
+    [Output('last-visited-page', 'data'),
+     Output('session-active', 'data', allow_duplicate=True)],
     [Input('url', 'pathname')],
+    prevent_initial_call='initial_duplicate',
 )
 
 
 @app.callback(
     [Output('resume-dialog-target', 'data'),
-     Output('page-restore-done', 'data')],
+     Output('page-restore-done', 'data'),
+     Output('url', 'pathname', allow_duplicate=True),
+     Output('session-active', 'data')],
     [Input('last-visited-page', 'data'),
      Input('user-info-store', 'data'),
      Input('full-df', 'data')],
     [State('page-restore-done', 'data'),
-     State('url', 'pathname')],
+     State('url', 'pathname'),
+     State('session-active', 'data')],
     prevent_initial_call=True,
 )
 def restore_page_on_load(
@@ -2831,29 +2843,31 @@ def restore_page_on_load(
     full_df_data: Optional[Dict],
     already_done: Optional[bool],
     pathname: Optional[str],
-) -> Tuple[Optional[Dict[str, Any]], bool]:
-    """Show a resume-or-start-over dialog when a prior session is detected.
+    session_active: Optional[bool],
+) -> Tuple[Optional[Dict[str, Any]], bool, str, bool]:
+    """Restore the user's last game page on load.
 
-    Instead of auto-redirecting, we compute the best target page and store it
-    in ``resume-dialog-target``.  A separate callback renders the dialog UI
-    and handles the user's choice.
+    On a **fresh browser session** (``session-active`` is False in
+    sessionStorage): show the resume-or-start-over dialog so the user can
+    choose.
+
+    On a **tab-switch-back** (``session-active`` is True — the user already
+    interacted in this tab and just clicked a navbar link that caused a full
+    reload): silently redirect to the last game page without a dialog.
 
     All three localStorage stores (last-visited-page, user-info-store, full-df)
     are Inputs so the callback re-fires as each store hydrates.  The
-    ``page-restore-done`` flag prevents the dialog from appearing twice.
+    ``page-restore-done`` memory flag prevents action after the first decision.
     """
     if already_done or _is_chart_mode:
         raise PreventUpdate
 
     if not last_page or last_page == "/":
-        return no_update, True
+        return no_update, True, no_update, True
 
-    # Only show the resume dialog when the user landed on the root page.
     if pathname and pathname != "/":
-        return no_update, True
+        return no_update, True, no_update, True
 
-    # Pages beyond /startup need user_info to determine a valid target.
-    # If it hasn't hydrated yet, wait for the next firing.
     if last_page in ("/prediction", "/ending", "/final") and not user_info:
         raise PreventUpdate
 
@@ -2863,7 +2877,7 @@ def restore_page_on_load(
         rounds_played = len(user_info.get('rounds') or [])
         current_round = int(user_info.get('current_round_number') or (rounds_played + 1))
 
-    with start_action(action_type=u"restore_page_on_load", last_page=last_page, has_user_info=user_info is not None) as action:
+    with start_action(action_type=u"restore_page_on_load", last_page=last_page, has_user_info=user_info is not None, session_active=bool(session_active)) as action:
         target: Optional[str] = None
 
         if last_page == "/startup":
@@ -2885,7 +2899,11 @@ def restore_page_on_load(
 
         if target is None:
             action.log(message_type="no_restorable_target", last_page=last_page)
-            return no_update, True
+            return no_update, True, no_update, True
+
+        if session_active:
+            action.log(message_type="tab_switch_redirect", target=target)
+            return no_update, True, target, True
 
         action.log(message_type="showing_resume_dialog", target=target, current_round=current_round)
         dialog_data = {
@@ -2893,7 +2911,7 @@ def restore_page_on_load(
             "current_round": current_round,
             "max_rounds": MAX_ROUNDS,
         }
-        return dialog_data, True
+        return dialog_data, True, no_update, True
 
 
 # --- Resume dialog: render, continue, start-over ---
@@ -3005,7 +3023,8 @@ def render_resume_dialog(
 
 @app.callback(
     [Output('url', 'pathname', allow_duplicate=True),
-     Output('resume-dialog-container', 'children', allow_duplicate=True)],
+     Output('resume-dialog-container', 'children', allow_duplicate=True),
+     Output('session-active', 'data', allow_duplicate=True)],
     [Input('resume-continue-btn', 'n_clicks')],
     [State('resume-dialog-target', 'data')],
     prevent_initial_call=True,
@@ -3013,14 +3032,14 @@ def render_resume_dialog(
 def handle_resume_continue(
     n_clicks: Optional[int],
     dialog_data: Optional[Dict[str, Any]],
-) -> Tuple[str, List]:
+) -> Tuple[str, List, bool]:
     """Navigate to the saved page when the user clicks Continue."""
     if not n_clicks or not dialog_data:
         raise PreventUpdate
     target = dialog_data.get("target", "/")
     with start_action(action_type=u"resume_continue", target=target) as action:
         action.log(message_type="user_chose_continue")
-    return target, []
+    return target, [], True
 
 
 @app.callback(
@@ -3039,7 +3058,8 @@ def handle_resume_continue(
      Output('is-example-data', 'data', allow_duplicate=True),
      Output('data-source-name', 'data', allow_duplicate=True),
      Output('initial-slider-value', 'data', allow_duplicate=True),
-     Output('clean-storage-flag', 'data', allow_duplicate=True)],
+     Output('clean-storage-flag', 'data', allow_duplicate=True),
+     Output('session-active', 'data', allow_duplicate=True)],
     [Input('resume-start-over-btn', 'n_clicks')],
     prevent_initial_call=True,
 )
@@ -3068,6 +3088,7 @@ def handle_resume_start_over(
         'example.csv',             # data-source-name
         None,                      # initial-slider-value
         True,                      # clean-storage-flag (self-resets via clientside callback)
+        True,                      # session-active (user made a choice in this tab)
     )
 
 
