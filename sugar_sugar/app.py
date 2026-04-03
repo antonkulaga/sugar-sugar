@@ -455,7 +455,7 @@ def update_prediction_uploaded_data_consent_ui(
     )
 
 
-_STATEFUL_PAGES = frozenset({'/prediction', '/ending', '/final'})
+_STATEFUL_PAGES = frozenset({'/prediction', '/ending'})
 
 
 @app.callback(
@@ -465,7 +465,9 @@ _STATEFUL_PAGES = frozenset({'/prediction', '/ending', '/final'})
     [Input('interface-language', 'data')],
     [State('url', 'pathname'),
      State('user-info-store', 'data'),
-     State('user-agent', 'data')],
+     State('user-agent', 'data'),
+     State('full-df', 'data'),
+     State('glucose-unit', 'data')],
     prevent_initial_call=True,
 )
 def update_on_language_change(
@@ -473,11 +475,13 @@ def update_on_language_change(
     pathname: Optional[str],
     user_info: Optional[Dict[str, Any]],
     user_agent: Optional[str],
+    full_df_data: Optional[Dict],
+    glucose_unit: Optional[str],
 ) -> tuple:
     """Re-render page content and navbar when language changes.
 
-    Pages with interactive state (prediction chart, ending, final) only get
-    a navbar refresh -- page content is left untouched.
+    Pages with interactive state (prediction chart, ending) only get
+    a navbar refresh -- page content is left untouched via per-element callbacks.
     """
     locale = normalize_locale(interface_language)
     navbar = NavBar(locale=locale, current_page=pathname or "/")
@@ -486,6 +490,10 @@ def update_on_language_change(
         return no_update, no_update, navbar
 
     warning_content = render_mobile_warning(user_agent, locale=locale)
+    if pathname == '/final':
+        if user_info:
+            return create_final_layout(full_df_data, user_info, glucose_unit, locale=locale), warning_content, navbar
+        return no_update, no_update, navbar
     if pathname == "/consent-form":
         return ConsentFormPage(locale=locale), warning_content, navbar
     if pathname == '/startup':
@@ -553,6 +561,111 @@ def update_prediction_text_on_language_change(
         t("ui.startup.data_usage_consent_label", locale=locale),
         t("ui.submit.submit", locale=locale),
         t("ui.common.finish_exit", locale=locale),
+    )
+
+
+@app.callback(
+    [Output('ending-title', 'children'),
+     Output('ending-disclaimer-line1', 'children'),
+     Output('ending-disclaimer-line2', 'children'),
+     Output('ending-disclaimer-line3', 'children'),
+     Output('ending-round-info', 'children'),
+     Output('ending-round-motivation', 'children'),
+     Output('ending-units-line', 'children'),
+     Output('ending-graph-explanation', 'children'),
+     Output('ending-prediction-results-title', 'children'),
+     Output('ending-prediction-table', 'data'),
+     Output('ending-prediction-table', 'columns'),
+     Output('ending-metrics-container', 'children'),
+     Output('ending-local-storage-note', 'children'),
+     Output('finish-study-button-ending', 'children'),
+     Output('next-round-button', 'children'),
+     Output('ending-switch-format-title', 'children'),
+     Output('switch-format-c', 'children'),
+     Output('switch-format-a', 'children'),
+     Output('switch-format-b', 'children')],
+    [Input('interface-language', 'data')],
+    [State('url', 'pathname'),
+     State('user-info-store', 'data'),
+     State('glucose-unit', 'data')],
+    prevent_initial_call=True,
+)
+def update_ending_text_on_language_change(
+    interface_language: Optional[str],
+    pathname: Optional[str],
+    user_info: Optional[Dict[str, Any]],
+    glucose_unit: Optional[str],
+) -> tuple:
+    """Update translatable text on the ending page when language changes."""
+    n_outputs = 19
+    if pathname != '/ending':
+        return tuple(no_update for _ in range(n_outputs))
+
+    locale = normalize_locale(interface_language)
+    unit = glucose_unit if glucose_unit in ('mg/dL', 'mmol/L') else 'mg/dL'
+
+    rounds_played = len(user_info.get('rounds') or []) if user_info else 0
+    max_rounds = int(user_info.get('max_rounds') or MAX_ROUNDS) if user_info else MAX_ROUNDS
+    current_round_number = int(user_info.get('current_round_number') or rounds_played) if user_info else rounds_played
+    is_last_round = current_round_number >= max_rounds
+
+    metric_label_map: dict[str, str] = {
+        "Actual Glucose": t("ui.table.actual_glucose", locale=locale),
+        "Predicted": t("ui.table.predicted", locale=locale),
+        "Absolute Error": t("ui.table.absolute_error", locale=locale),
+        "Relative Error (%)": t("ui.table.relative_error_pct", locale=locale, pct="%"),
+    }
+
+    table_data: list[dict[str, str]] = no_update
+    table_columns: list[dict[str, str]] = no_update
+    if user_info and 'prediction_table_data' in user_info:
+        raw_table = _convert_table_data_units(user_info['prediction_table_data'], unit)
+        table_data = []
+        for row in raw_table:
+            new_row = dict(row)
+            new_row["metric"] = metric_label_map.get(str(row.get("metric", "")), str(row.get("metric", "")))
+            table_data.append(new_row)
+        table_columns = [{'name': t("ui.table.metric_header", locale=locale), 'id': 'metric'}] + [
+            {'name': f'T{i}', 'id': f't{i}', 'type': 'text'}
+            for i in range(len(raw_table[0]) - 1)
+            if raw_table and raw_table[1].get(f't{i}', '-') != '-'
+        ]
+
+    metrics_display: Any = no_update
+    if user_info and 'prediction_table_data' in user_info:
+        raw_table = _convert_table_data_units(user_info['prediction_table_data'], unit)
+        metrics_comp = MetricsComponent()
+        stored_metrics = metrics_comp._calculate_metrics_from_table_data(raw_table) if len(raw_table) >= 2 else None
+        metrics_display = MetricsComponent.create_ending_metrics_display(stored_metrics, locale=locale) if stored_metrics else [
+            html.H3(t("ui.metrics.title_accuracy_metrics", locale=locale), style={'textAlign': 'center'}),
+            html.Div(
+                t("ui.metrics.no_metrics_available", locale=locale),
+                style={'color': 'gray', 'fontStyle': 'italic', 'fontSize': '16px', 'padding': '10px', 'textAlign': 'center'}
+            )
+        ]
+
+    finish_button_text = t("ui.ending.view_complete_analysis", locale=locale) if is_last_round else t("ui.common.finish_exit", locale=locale)
+
+    return (
+        t("ui.ending.title", locale=locale),
+        t("ui.results_disclaimer.line1", locale=locale),
+        t("ui.results_disclaimer.line2", locale=locale),
+        t("ui.results_disclaimer.line3", locale=locale),
+        t("ui.common.round_of", locale=locale, current=current_round_number, total=max_rounds),
+        t("ui.ending.round_motivation", locale=locale, total=max_rounds, min_useful=max(1, max_rounds // 2)),
+        t("ui.ending.units_line", locale=locale, unit=unit),
+        t("ui.ending.graph_explanation", locale=locale),
+        t("ui.ending.prediction_results", locale=locale),
+        table_data,
+        table_columns,
+        metrics_display,
+        t("ui.ending.local_storage_note", locale=locale),
+        finish_button_text,
+        t("ui.ending.next_round", locale=locale),
+        t("ui.switch_format.title", locale=locale),
+        t("ui.switch_format.try_c", locale=locale),
+        t("ui.switch_format.try_a", locale=locale),
+        t("ui.switch_format.try_b", locale=locale),
     )
 
 
@@ -1249,7 +1362,7 @@ def create_ending_layout(
     subject_info_line = " — ".join(subject_parts) if subject_parts else ""
 
     return html.Div([
-        html.H1(t("ui.ending.title", locale=locale), style={
+        html.H1(t("ui.ending.title", locale=locale), id='ending-title', style={
             'textAlign': 'center', 
             'marginBottom': '20px',
             'fontSize': 'clamp(24px, 4vw, 48px)',
@@ -1257,9 +1370,9 @@ def create_ending_layout(
         }),
         html.Div(
             [
-                html.P(t("ui.results_disclaimer.line1", locale=locale), style={'margin': '0'}),
-                html.P(t("ui.results_disclaimer.line2", locale=locale), style={'margin': '0'}),
-                html.P(t("ui.results_disclaimer.line3", locale=locale), style={'margin': '0'}),
+                html.P(t("ui.results_disclaimer.line1", locale=locale), id='ending-disclaimer-line1', style={'margin': '0'}),
+                html.P(t("ui.results_disclaimer.line2", locale=locale), id='ending-disclaimer-line2', style={'margin': '0'}),
+                html.P(t("ui.results_disclaimer.line3", locale=locale), id='ending-disclaimer-line3', style={'margin': '0'}),
             ],
             disable_n_clicks=True,
             style={
@@ -1277,6 +1390,7 @@ def create_ending_layout(
         ),
         html.Div(
             t("ui.common.round_of", locale=locale, current=current_round_number, total=max_rounds),
+            id='ending-round-info',
             disable_n_clicks=True,
             style={
                 'textAlign': 'center',
@@ -1288,6 +1402,7 @@ def create_ending_layout(
         ),
         html.Div(
             t("ui.ending.round_motivation", locale=locale, total=max_rounds, min_useful=max(1, max_rounds // 2)),
+            id='ending-round-motivation',
             disable_n_clicks=True,
             style={
                 'textAlign': 'center',
@@ -1311,6 +1426,7 @@ def create_ending_layout(
         ),
         html.Div(
             t("ui.ending.units_line", locale=locale, unit=unit),
+            id='ending-units-line',
             disable_n_clicks=True,
             style={
                 'textAlign': 'center',
@@ -1323,6 +1439,7 @@ def create_ending_layout(
         html.Div([
             html.P(
                 t("ui.ending.graph_explanation", locale=locale),
+                id='ending-graph-explanation',
                 style={
                     'textAlign': 'center',
                     'color': '#4a5568',
@@ -1367,7 +1484,7 @@ def create_ending_layout(
         
         # Prediction table section - only columns with actual predictions
         html.Div([
-            html.H3(t("ui.ending.prediction_results", locale=locale), style={
+            html.H3(t("ui.ending.prediction_results", locale=locale), id='ending-prediction-results-title', style={
                 'textAlign': 'center', 
                 'marginBottom': '15px',
                 'fontSize': 'clamp(18px, 3vw, 24px)'
@@ -1427,6 +1544,7 @@ def create_ending_layout(
         }),
         html.Div(
             metrics_display,
+            id='ending-metrics-container',
             disable_n_clicks=True,
             style={
                 'padding': 'clamp(10px, 2vw, 20px)',
@@ -1441,6 +1559,7 @@ def create_ending_layout(
         
         html.Div(
             t("ui.ending.local_storage_note", locale=locale),
+            id='ending-local-storage-note',
             disable_n_clicks=True,
             style={
                 'textAlign': 'center',
@@ -1510,6 +1629,7 @@ def create_ending_layout(
             [
                 html.H3(
                     t("ui.switch_format.title", locale=locale),
+                    id='ending-switch-format-title',
                     style={'textAlign': 'center', 'marginTop': '20px', 'marginBottom': '10px', 'fontSize': 'clamp(18px, 3vw, 24px)'},
                 ),
                 html.Div(id="switch-format-error", style={'marginBottom': '10px'}),
@@ -1820,7 +1940,7 @@ def create_final_layout(full_df_data: Optional[Dict], user_info: Dict[str, Any],
         })
 
     return html.Div([
-        html.H1(t("ui.final.title", locale=locale), style={
+        html.H1(t("ui.final.title", locale=locale), id='final-title', style={
             'textAlign': 'center',
             'marginBottom': '10px',
             'fontSize': 'clamp(24px, 4vw, 48px)',
@@ -1828,9 +1948,9 @@ def create_final_layout(full_df_data: Optional[Dict], user_info: Dict[str, Any],
         }),
         html.Div(
             [
-                html.P(t("ui.results_disclaimer.line1", locale=locale), style={'margin': '0'}),
-                html.P(t("ui.results_disclaimer.line2", locale=locale), style={'margin': '0'}),
-                html.P(t("ui.results_disclaimer.line3", locale=locale), style={'margin': '0'}),
+                html.P(t("ui.results_disclaimer.line1", locale=locale), id='final-disclaimer-line1', style={'margin': '0'}),
+                html.P(t("ui.results_disclaimer.line2", locale=locale), id='final-disclaimer-line2', style={'margin': '0'}),
+                html.P(t("ui.results_disclaimer.line3", locale=locale), id='final-disclaimer-line3', style={'margin': '0'}),
             ],
             disable_n_clicks=True,
             style={
@@ -1848,6 +1968,7 @@ def create_final_layout(full_df_data: Optional[Dict], user_info: Dict[str, Any],
         ),
         html.Div(
             t("ui.final.rounds_played", locale=locale, played=len(rounds), total=max_rounds),
+            id='final-rounds-played',
             disable_n_clicks=True,
             style={
                 'textAlign': 'center',
@@ -1859,8 +1980,8 @@ def create_final_layout(full_df_data: Optional[Dict], user_info: Dict[str, Any],
         ),
         html.Div(
             [
-                html.H3(t("ui.final.ranking_title", locale=locale), style={'textAlign': 'center', 'marginBottom': '10px'}),
-                html.Ul([html.Li(line) for line in ranking_lines], style={'margin': '0 auto', 'maxWidth': '760px'}),
+                html.H3(t("ui.final.ranking_title", locale=locale), id='final-ranking-title', style={'textAlign': 'center', 'marginBottom': '10px'}),
+                html.Ul([html.Li(line) for line in ranking_lines], id='final-ranking-list', style={'margin': '0 auto', 'maxWidth': '760px'}),
             ],
             disable_n_clicks=True,
             style={
@@ -1884,6 +2005,7 @@ def create_final_layout(full_df_data: Optional[Dict], user_info: Dict[str, Any],
                 if played_formats
                 else ""
             ),
+            id='final-played-formats',
             disable_n_clicks=True,
             style={
                 'textAlign': 'center',
@@ -1895,6 +2017,7 @@ def create_final_layout(full_df_data: Optional[Dict], user_info: Dict[str, Any],
         ),
         html.Div(
             overall_metrics_display,
+            id='final-overall-metrics-container',
             disable_n_clicks=True,
             style={
                 'padding': 'clamp(10px, 2vw, 20px)',
@@ -1907,13 +2030,14 @@ def create_final_layout(full_df_data: Optional[Dict], user_info: Dict[str, Any],
             }
         ),
         html.Div([
-            html.H3(t("ui.final.per_round_metrics", locale=locale), style={
+            html.H3(t("ui.final.per_round_metrics", locale=locale), id='final-per-round-title', style={
                 'textAlign': 'center',
                 'marginBottom': '15px',
                 'fontSize': 'clamp(18px, 3vw, 24px)'
             }),
             html.Div(
                 t("ui.ending.units_line", locale=locale, unit=unit),
+                id='final-units-line',
                 style={
                     'textAlign': 'center',
                     'marginBottom': '10px',
@@ -1963,6 +2087,7 @@ def create_final_layout(full_df_data: Optional[Dict], user_info: Dict[str, Any],
             [
                 html.H3(
                     t("ui.switch_format.title", locale=locale),
+                    id='final-switch-format-title',
                     style={'textAlign': 'center', 'marginBottom': '10px', 'fontSize': 'clamp(18px, 3vw, 24px)'},
                 ),
                 html.Div(id="switch-format-error", style={'marginBottom': '10px'}),
@@ -3024,6 +3149,7 @@ def render_resume_dialog(
 @app.callback(
     [Output('url', 'pathname', allow_duplicate=True),
      Output('resume-dialog-container', 'children', allow_duplicate=True),
+     Output('resume-dialog-target', 'data', allow_duplicate=True),
      Output('session-active', 'data', allow_duplicate=True)],
     [Input('resume-continue-btn', 'n_clicks')],
     [State('resume-dialog-target', 'data')],
@@ -3032,14 +3158,14 @@ def render_resume_dialog(
 def handle_resume_continue(
     n_clicks: Optional[int],
     dialog_data: Optional[Dict[str, Any]],
-) -> Tuple[str, List, bool]:
+) -> Tuple[str, List, None, bool]:
     """Navigate to the saved page when the user clicks Continue."""
     if not n_clicks or not dialog_data:
         raise PreventUpdate
     target = dialog_data.get("target", "/")
     with start_action(action_type=u"resume_continue", target=target) as action:
         action.log(message_type="user_chose_continue")
-    return target, [], True
+    return target, [], None, True
 
 
 @app.callback(
