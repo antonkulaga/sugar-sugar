@@ -49,6 +49,7 @@ ro:
     title: "Despre Sugar Sugar"
     body: "Sugar Sugar este un instrument de cercetare creat pentru a măsura cât de precis pot oamenii să prevadă tendințele viitoare ale glucozei. Participarea ta ne ajută să înțelegem intuiția umană și să îmbunătățim modelele de predicție."
     study_design_title: "Designul studiului"
+    download_pdf_label: "Descarcă designul studiului (PDF)"
     github_link_label: "Proiectul pe GitHub"
 
   contact:

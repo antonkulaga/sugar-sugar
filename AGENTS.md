@@ -56,6 +56,12 @@ Interactive Dash components (sliders, dropdowns, inputs) that are destroyed and 
 
 **Rule:** Any interactive component whose value must survive a layout rebuild (page navigation, resume, language change) needs `persistence=True, persistence_type=STORAGE_TYPE`.
 
+### resume-dialog-target must be cleared after dismissal
+
+`render_resume_dialog` has `Input('interface-language', 'data')` so the dialog text updates when language changes. But `resume-dialog-target` is a memory store — if it is not set to `None` when the dialog is dismissed, any later `interface-language` change (e.g. clicking a flag on `/ending`) will re-render the stale dialog on top of the current page.
+
+**Rule:** Every callback that dismisses the resume dialog (`handle_resume_continue`, `handle_resume_start_over`) must set `resume-dialog-target` to `None` in addition to clearing `resume-dialog-container`.
+
 ### Mobile viewport
 
 The app forces a desktop-width layout viewport (`_DESKTOP_LAYOUT_VIEWPORT_CSS_PX = 1280`) via a `meta_tags` viewport entry on the `Dash()` constructor. This makes mobile browsers scale the page like "Request desktop site" instead of using `width=device-width`. Do not revert to `device-width`; the chart/drawing UI is unusable at phone-width layouts.
@@ -88,5 +94,6 @@ The app forces a desktop-width layout viewport (`_DESKTOP_LAYOUT_VIEWPORT_CSS_PX
 - `dcc.Location` must NOT have a hardcoded `pathname="/"` — it overrides the actual browser URL and breaks direct navigation to `/about`, `/contact`, etc. Omit `pathname` so it reads from the browser.
 - Dash clientside callbacks cannot use the same `dcc.Store` as both Input and Output — causes `dc[namespace][function_name] is not a function` JS error. Use a separate store or `State` instead.
 - `uv run start --clean` clears all browser localStorage on first connect via `clean-storage-flag` store + clientside callback; "Start Over" in the resume dialog reuses the same `clean-storage-flag` mechanism
-- The prediction page uses `_STATEFUL_PAGES` to skip full re-renders on language change; a separate `update_prediction_text_on_language_change` callback targets individual element IDs to update text without destroying chart state
+- `_STATEFUL_PAGES` (`/prediction`, `/ending`) skip full `page-content` re-renders on language change to preserve interactive/chart state. Each stateful page needs its own `update_*_text_on_language_change` callback that targets individual element IDs. `/final` is **not** stateful — it re-renders fully via `update_on_language_change`.
+- When adding a new stateful page or translatable text to an existing one, every translatable element needs a stable `id` and a corresponding `Output` in the page's language-change callback. Otherwise the text stays in the old language.
 - The prediction area is 12 points (1 hour at 5-min intervals); the game requires predictions drawn to the end of the hidden area before submit. `MAX_ROUNDS` is configurable via `.env` (defaults to 12).

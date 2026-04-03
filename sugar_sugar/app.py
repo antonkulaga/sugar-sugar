@@ -15,6 +15,7 @@ import dash_bootstrap_components as dbc
 import os
 import sys
 import typer
+from flask import send_file as flask_send_file, request as flask_request
 import uuid
 from dotenv import load_dotenv
 from eliot import start_action, start_task
@@ -69,7 +70,6 @@ from sugar_sugar.components.ending import EndingPage
 from sugar_sugar.components.navbar import NavBar
 from sugar_sugar.generic_sources_metadata import load_generic_sources_metadata
 from sugar_sugar.contact_info import load_contact_info
-from sugar_sugar.static_markdown import static_markdown_iframe
 
 # Type aliases for clarity
 TableData = List[Dict[str, str]]  # Format for the predictions table data
@@ -216,6 +216,19 @@ app = dash.Dash(
     ],
 )
 app.title = "Sugar Sugar - Glucose Prediction Game"
+
+server = app.server
+
+@server.route("/download-study-pdf")
+def _download_study_pdf():
+    locale = flask_request.args.get("locale", "en")
+    loc = normalize_locale(locale)
+    base_dir = project_root / "data" / "input" / "study_design"
+    for name in (f"study_design.{loc}.pdf", "study_design.pdf"):
+        p = base_dir / name
+        if p.exists():
+            return flask_send_file(str(p), mimetype="application/pdf", as_attachment=True, download_name=name)
+    return "PDF not found", 404
 
 app.clientside_callback(
     "function() { return window.navigator.userAgent || ''; }",
@@ -789,6 +802,17 @@ def _study_design_markdown(locale: str) -> str:
     return ""
 
 
+def _study_design_pdf_path(locale: str) -> Path | None:
+    """Return the path to a locale-specific or base study-design PDF, if one exists."""
+    loc = normalize_locale(locale)
+    base_dir = project_root / "data" / "input" / "study_design"
+    for name in (f"study_design.{loc}.pdf", "study_design.pdf"):
+        p = base_dir / name
+        if p.exists():
+            return p
+    return None
+
+
 def create_about_page(*, locale: str) -> html.Div:
     study_md = _study_design_markdown(locale)
     children: list[Any] = [
@@ -806,29 +830,45 @@ def create_about_page(*, locale: str) -> html.Div:
         ),
     ]
     if study_md:
+        study_header_children: list[Any] = [
+            html.H2(
+                t("ui.about.study_design_title", locale=locale),
+                style={"marginBottom": "16px"},
+            ),
+        ]
+        pdf_path = _study_design_pdf_path(locale)
+        if pdf_path is not None:
+            study_header_children.append(
+                html.Div(
+                    html.A(
+                        t("ui.about.download_pdf_label", locale=locale),
+                        href=f"/download-study-pdf?locale={normalize_locale(locale)}",
+                        target="_blank",
+                        rel="noopener noreferrer",
+                        className="ui blue basic button",
+                        style={"marginBottom": "16px"},
+                    ),
+                    disable_n_clicks=True,
+                )
+            )
+
         children.extend(
             [
                 html.Hr(style={"margin": "24px 0"}),
-                html.H2(
-                    t("ui.about.study_design_title", locale=locale),
-                    style={"marginBottom": "16px"},
-                ),
+                *study_header_children,
                 html.Div(
-                    static_markdown_iframe(
+                    dcc.Markdown(
                         study_md,
-                        title=t("ui.about.study_design_title", locale=locale),
-                        iframe_style={
-                            "height": "min(70vh, 900px)",
-                        },
+                        dangerously_allow_html=True,
                     ),
                     className="study-design-content",
                     style={
-                        "overflowY": "auto",
                         "border": "1px solid rgba(15, 23, 42, 0.10)",
                         "borderRadius": "12px",
                         "padding": "12px 16px",
                         "background": "rgba(255,255,255,0.75)",
                     },
+                    disable_n_clicks=True,
                 ),
             ]
         )
