@@ -152,7 +152,7 @@ en:
     how_to_play: "How to play:"
     how_to_play_1: "1. Click and drag in the graph to add predictions"
     how_to_play_2: "2. Draw one line after another to create prediction curves"
-    how_to_play_3: "3. Try to predict at least 5 points to see your accuracy metrics"
+    how_to_play_3: "3. Draw your prediction to the end of the hidden area to submit"
 
   prediction:
     units_label: "Units:"
@@ -186,7 +186,7 @@ en:
   metrics:
     title: "Metrics"
     prediction_accuracy: "Prediction Accuracy"
-    placeholder_need_5: "Add at least 5 prediction points to see accuracy metrics"
+    placeholder_need_5: "Draw predictions on the chart to see accuracy metrics"
     title_accuracy_metrics: "Accuracy Metrics"
     no_metrics_available: "No metrics available"
     desc:

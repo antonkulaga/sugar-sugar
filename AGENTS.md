@@ -67,10 +67,11 @@ The app forces a desktop-width layout viewport (`_DESKTOP_LAYOUT_VIEWPORT_CSS_PX
 - GitHub repo is GlucoseDAO/sugar-sugar; issues are tracked there
 - `suppress_callback_exceptions=True` is set on the Dash app to allow callbacks referencing components not yet in the layout
 - The navbar is a Fomantic UI `massive blue inverted tabular menu` (`NavBar` class in `sugar_sugar/components/navbar.py`). Left items: Game, The Study, Video instructions, Contact us. Right items: language flags. The active tab is highlighted via a CSS bottom-border rule.
-- The consent/landing page requires scrolling the participant text to the bottom before checkboxes become interactive (enforced by `dcc.Interval` polling)
 - `STORAGE_TYPE` env var controls `dcc.Store` `storage_type` and input `persistence_type` across the app; defaults to `local` (localStorage persists across sessions)
-- `dcc.Markdown` was replaced with server-side Python `markdown` lib + `html.Iframe(srcDoc=...)` in `static_markdown.py` to avoid React 18 async-markdown warnings
 - When using `dcc.Store` with `storage_type='local'`, the store hydrates from localStorage client-side; use it as callback `Input` (not `State`) to react to hydration
-- A `last-visited-page` store + `restore_page_on_load` callback restores the user's last page when `STORAGE_TYPE=local`; page flow: `/` → `/startup` → `/prediction` → `/ending` → `/final`
-- `MAX_ROUNDS` is configurable via `.env` (defaults to 12)
-- The app's CSS enforces `min-width: 1280px` on `html, body` as a fallback alongside the meta viewport `width=1280` for mobile desktop-view
+- A `last-visited-page` store + `restore_page_on_load` callback restores the user's last page when `STORAGE_TYPE=local`; a resume dialog (continue / start over) appears for returning users. Page flow: `/` → `/startup` → `/prediction` → `/ending` → `/final`
+- `dcc.Location` must NOT have a hardcoded `pathname="/"` — it overrides the actual browser URL and breaks direct navigation to `/about`, `/contact`, etc. Omit `pathname` so it reads from the browser.
+- Dash clientside callbacks cannot use the same `dcc.Store` as both Input and Output — causes `dc[namespace][function_name] is not a function` JS error. Use a separate store or `State` instead.
+- `uv run start --clean` clears all browser localStorage on first connect via `clean-storage-flag` store + clientside callback; "Start Over" in the resume dialog reuses the same `clean-storage-flag` mechanism
+- The prediction page uses `_STATEFUL_PAGES` to skip full re-renders on language change; a separate `update_prediction_text_on_language_change` callback targets individual element IDs to update text without destroying chart state
+- The prediction area is 12 points (1 hour at 5-min intervals); the game requires predictions drawn to the end of the hidden area before submit. `MAX_ROUNDS` is configurable via `.env` (defaults to 12).

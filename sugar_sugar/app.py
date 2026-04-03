@@ -496,6 +496,62 @@ def update_on_language_change(
 
 
 @app.callback(
+    [Output('header-app-title', 'children'),
+     Output('header-description', 'children'),
+     Output('header-how-to-play', 'children'),
+     Output('header-data-source-label', 'children'),
+     Output('header-upload-prompt', 'children'),
+     Output('use-example-data-button', 'children'),
+     Output('header-time-window-label', 'children'),
+     Output('prediction-units-label', 'children'),
+     Output('prediction-consent-label', 'children'),
+     Output('submit-button', 'children'),
+     Output('finish-study-button', 'children')],
+    [Input('interface-language', 'data')],
+    [State('url', 'pathname')],
+    prevent_initial_call=True,
+)
+def update_prediction_text_on_language_change(
+    interface_language: Optional[str],
+    pathname: Optional[str],
+) -> tuple:
+    """Update translatable text on the prediction page when language changes mid-game."""
+    if pathname != '/prediction':
+        return tuple(no_update for _ in range(11))
+
+    locale = normalize_locale(interface_language)
+    return (
+        t("ui.common.app_title", locale=locale),
+        [
+            t("ui.header.description_1", locale=locale) + " ",
+            html.Br(),
+            t("ui.header.description_2", locale=locale) + " ",
+            t("ui.header.description_3", locale=locale),
+        ],
+        [
+            html.Strong(t("ui.header.how_to_play", locale=locale)),
+            html.Br(),
+            t("ui.header.how_to_play_1", locale=locale),
+            html.Br(),
+            t("ui.header.how_to_play_2", locale=locale),
+            html.Br(),
+            t("ui.header.how_to_play_3", locale=locale),
+        ],
+        t("ui.header.current_data_source", locale=locale),
+        [
+            t("ui.header.upload_prompt_1", locale=locale),
+            html.A(t("ui.header.upload_prompt_2", locale=locale)),
+        ],
+        t("ui.header.use_example_data", locale=locale),
+        t("ui.header.time_window_label", locale=locale),
+        t("ui.prediction.units_label", locale=locale),
+        t("ui.startup.data_usage_consent_label", locale=locale),
+        t("ui.submit.submit", locale=locale),
+        t("ui.common.finish_exit", locale=locale),
+    )
+
+
+@app.callback(
     [Output('page-content', 'children'),
      Output('mobile-warning', 'children'),
      Output('navbar-container', 'children')],
@@ -860,6 +916,7 @@ def create_prediction_layout(*, locale: str, format_value: str, user_info: Dict[
             [
                 html.Div(
                     t("ui.startup.data_usage_consent_label", locale=locale),
+                    id='prediction-consent-label',
                     style={'fontWeight': '600', 'marginBottom': '8px'},
                 ),
                 dcc.Checklist(
@@ -896,7 +953,7 @@ def create_prediction_layout(*, locale: str, format_value: str, user_info: Dict[
             'marginBottom': '10px'
         }),
         html.Div([
-            html.Div(t("ui.prediction.units_label", locale=locale), style={'fontWeight': '600', 'marginRight': '10px'}),
+            html.Div(t("ui.prediction.units_label", locale=locale), id='prediction-units-label', style={'fontWeight': '600', 'marginRight': '10px'}),
             dbc.RadioItems(
                 id='glucose-unit-selector',
                 options=[

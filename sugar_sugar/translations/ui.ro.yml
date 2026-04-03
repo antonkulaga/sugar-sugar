@@ -153,7 +153,7 @@ ro:
     how_to_play: "Cum se joacă:"
     how_to_play_1: "1. Fă clic și trage pe grafic pentru a adăuga predicții"
     how_to_play_2: "2. Desenează linii una după alta pentru a crea curbe de predicție"
-    how_to_play_3: "3. Încearcă să prezici cel puțin 5 puncte pentru a vedea metricele de acuratețe"
+    how_to_play_3: "3. Desenează predicția până la capătul zonei ascunse pentru a trimite"
 
   prediction:
     units_label: "Unități:"
@@ -187,7 +187,7 @@ ro:
   metrics:
     title: "Metrici"
     prediction_accuracy: "Acuratețea predicției"
-    placeholder_need_5: "Adaugă cel puțin 5 puncte de predicție pentru a vedea metricele de acuratețe"
+    placeholder_need_5: "Desenează predicții pe grafic pentru a vedea metricele de acuratețe"
     title_accuracy_metrics: "Metrici de acuratețe"
     no_metrics_available: "Nu sunt disponibile metrici"
     desc:

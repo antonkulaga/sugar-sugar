@@ -153,7 +153,7 @@ de:
     how_to_play: "So spielst du:"
     how_to_play_1: "1. Im Chart klicken und ziehen, um Vorhersagen hinzuzufügen"
     how_to_play_2: "2. Linie für Linie zeichnen, um Vorhersagekurven zu erstellen"
-    how_to_play_3: "3. Mindestens 5 Punkte vorhersagen, um Genauigkeitsmetriken zu sehen"
+    how_to_play_3: "3. Zeichne deine Vorhersage bis zum Ende des ausgeblendeten Bereichs, um zu senden"
 
   prediction:
     units_label: "Einheiten:"
@@ -187,7 +187,7 @@ de:
   metrics:
     title: "Metriken"
     prediction_accuracy: "Vorhersagegenauigkeit"
-    placeholder_need_5: "Füge mindestens 5 Vorhersagepunkte hinzu, um Genauigkeitsmetriken zu sehen"
+    placeholder_need_5: "Zeichne Vorhersagen im Chart, um Genauigkeitsmetriken zu sehen"
     title_accuracy_metrics: "Genauigkeitsmetriken"
     no_metrics_available: "Keine Metriken verfügbar"
     desc:
