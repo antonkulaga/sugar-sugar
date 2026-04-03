@@ -68,6 +68,8 @@ en:
     body: "Sugar Sugar is a research tool designed to measure how accurately humans can predict future glucose trends."
     study_design_title: "Study design"
     download_pdf_label: "Download study design (PDF)"
+    pdf_original_english_note: "(original in English)"
+    translation_note: "The text below is a translation. The original study design in English is available as a PDF above."
     github_link_label: "Project on GitHub"
 
   contact:

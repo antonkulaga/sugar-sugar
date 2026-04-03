@@ -70,6 +70,7 @@ from sugar_sugar.components.ending import EndingPage
 from sugar_sugar.components.navbar import NavBar
 from sugar_sugar.generic_sources_metadata import load_generic_sources_metadata
 from sugar_sugar.contact_info import load_contact_info
+from sugar_sugar.static_markdown import static_markdown_autosize_iframe
 
 # Type aliases for clarity
 TableData = List[Dict[str, str]]  # Format for the predictions table data
@@ -222,12 +223,9 @@ server = app.server
 @server.route("/download-study-pdf")
 def _download_study_pdf():
     locale = flask_request.args.get("locale", "en")
-    loc = normalize_locale(locale)
-    base_dir = project_root / "data" / "input" / "study_design"
-    for name in (f"study_design.{loc}.pdf", "study_design.pdf"):
-        p = base_dir / name
-        if p.exists():
-            return flask_send_file(str(p), mimetype="application/pdf", as_attachment=True, download_name=name)
+    pdf_path, _ = _study_design_pdf_info(locale)
+    if pdf_path is not None:
+        return flask_send_file(str(pdf_path), mimetype="application/pdf", as_attachment=True, download_name=pdf_path.name)
     return "PDF not found", 404
 
 app.clientside_callback(
@@ -802,15 +800,22 @@ def _study_design_markdown(locale: str) -> str:
     return ""
 
 
-def _study_design_pdf_path(locale: str) -> Path | None:
-    """Return the path to a locale-specific or base study-design PDF, if one exists."""
+def _study_design_pdf_info(locale: str) -> tuple[Path | None, bool]:
+    """Return (pdf_path, is_original_english).
+
+    *is_original_english* is True when the PDF found is the base (English)
+    file and the requested locale is not English — i.e. no locale-specific
+    PDF exists.
+    """
     loc = normalize_locale(locale)
     base_dir = project_root / "data" / "input" / "study_design"
-    for name in (f"study_design.{loc}.pdf", "study_design.pdf"):
-        p = base_dir / name
-        if p.exists():
-            return p
-    return None
+    localized = base_dir / f"study_design.{loc}.pdf"
+    if localized.exists():
+        return localized, False
+    base = base_dir / "study_design.pdf"
+    if base.exists():
+        return base, loc != "en"
+    return None, False
 
 
 def create_about_page(*, locale: str) -> html.Div:
@@ -836,18 +841,53 @@ def create_about_page(*, locale: str) -> html.Div:
                 style={"marginBottom": "16px"},
             ),
         ]
-        pdf_path = _study_design_pdf_path(locale)
+        pdf_path, pdf_is_english_original = _study_design_pdf_info(locale)
         if pdf_path is not None:
+            pdf_children: list[Any] = [
+                html.A(
+                    t("ui.about.download_pdf_label", locale=locale),
+                    href=f"/download-study-pdf?locale={normalize_locale(locale)}",
+                    target="_blank",
+                    rel="noopener noreferrer",
+                    className="ui blue basic button",
+                ),
+            ]
+            if pdf_is_english_original:
+                pdf_children.append(
+                    html.Span(
+                        t("ui.about.pdf_original_english_note", locale=locale),
+                        style={
+                            "marginLeft": "10px",
+                            "color": "#64748b",
+                            "fontSize": "14px",
+                            "fontStyle": "italic",
+                        },
+                    )
+                )
             study_header_children.append(
                 html.Div(
-                    html.A(
-                        t("ui.about.download_pdf_label", locale=locale),
-                        href=f"/download-study-pdf?locale={normalize_locale(locale)}",
-                        target="_blank",
-                        rel="noopener noreferrer",
-                        className="ui blue basic button",
-                        style={"marginBottom": "16px"},
-                    ),
+                    pdf_children,
+                    style={
+                        "marginBottom": "16px",
+                        "display": "flex",
+                        "alignItems": "center",
+                        "flexWrap": "wrap",
+                        "gap": "4px",
+                    },
+                    disable_n_clicks=True,
+                )
+            )
+
+        if pdf_is_english_original:
+            study_header_children.append(
+                html.Div(
+                    t("ui.about.translation_note", locale=locale),
+                    style={
+                        "color": "#64748b",
+                        "fontSize": "14px",
+                        "fontStyle": "italic",
+                        "marginBottom": "12px",
+                    },
                     disable_n_clicks=True,
                 )
             )
@@ -856,19 +896,9 @@ def create_about_page(*, locale: str) -> html.Div:
             [
                 html.Hr(style={"margin": "24px 0"}),
                 *study_header_children,
-                html.Div(
-                    dcc.Markdown(
-                        study_md,
-                        dangerously_allow_html=True,
-                    ),
-                    className="study-design-content",
-                    style={
-                        "border": "1px solid rgba(15, 23, 42, 0.10)",
-                        "borderRadius": "12px",
-                        "padding": "12px 16px",
-                        "background": "rgba(255,255,255,0.75)",
-                    },
-                    disable_n_clicks=True,
+                static_markdown_autosize_iframe(
+                    study_md,
+                    title=t("ui.about.study_design_title", locale=locale),
                 ),
             ]
         )

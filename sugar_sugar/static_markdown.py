@@ -111,3 +111,33 @@ def static_markdown_iframe(
         style=style,
         disable_n_clicks=True,
     )
+
+
+def static_markdown_autosize_iframe(
+    md: str,
+    *,
+    title: str,
+    iframe_id: str = "study-design-iframe",
+) -> html.Iframe:
+    """Same as *static_markdown_iframe* but the iframe auto-expands to fit
+    its content — no inner scrollbar.
+
+    Relies on ``assets/autosize-iframe.js`` which reads
+    ``contentDocument.scrollHeight`` from any iframe with
+    ``data-autosize="true"`` (same-origin access is allowed for srcdoc).
+    """
+    src_doc = html_fragment_to_srcdoc(markdown_to_html_fragment(md))
+    return html.Iframe(
+        id=iframe_id,
+        srcDoc=src_doc,
+        title=title,
+        style={
+            "width": "100%",
+            "border": "none",
+            "display": "block",
+            "overflow": "hidden",
+            "height": "0",
+        },
+        disable_n_clicks=True,
+        **{"data-autosize": "true"},
+    )
