@@ -3,6 +3,7 @@ from typing import Sequence, Optional, Any
 from dash import dcc, html
 from dash.html import Div
 
+from sugar_sugar.config import STORAGE_TYPE
 from sugar_sugar.i18n import t
 
 
@@ -62,6 +63,8 @@ class HeaderComponent(Div):
                     updatemode="mouseup",
                     included=True,
                     step=1,
+                    persistence=True,
+                    persistence_type=STORAGE_TYPE,
                 ),
             ],
             style={

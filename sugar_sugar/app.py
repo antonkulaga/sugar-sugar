@@ -2818,25 +2818,29 @@ app.clientside_callback(
 @app.callback(
     [Output('resume-dialog-target', 'data'),
      Output('page-restore-done', 'data')],
-    [Input('last-visited-page', 'data')],
+    [Input('last-visited-page', 'data'),
+     Input('user-info-store', 'data'),
+     Input('full-df', 'data')],
     [State('page-restore-done', 'data'),
-     State('url', 'pathname'),
-     State('user-info-store', 'data'),
-     State('full-df', 'data')],
+     State('url', 'pathname')],
     prevent_initial_call=True,
 )
 def restore_page_on_load(
     last_page: Optional[str],
-    already_done: Optional[bool],
-    pathname: Optional[str],
     user_info: Optional[Dict[str, Any]],
     full_df_data: Optional[Dict],
+    already_done: Optional[bool],
+    pathname: Optional[str],
 ) -> Tuple[Optional[Dict[str, Any]], bool]:
     """Show a resume-or-start-over dialog when a prior session is detected.
 
     Instead of auto-redirecting, we compute the best target page and store it
     in ``resume-dialog-target``.  A separate callback renders the dialog UI
     and handles the user's choice.
+
+    All three localStorage stores (last-visited-page, user-info-store, full-df)
+    are Inputs so the callback re-fires as each store hydrates.  The
+    ``page-restore-done`` flag prevents the dialog from appearing twice.
     """
     if already_done or _is_chart_mode:
         raise PreventUpdate
@@ -2845,9 +2849,13 @@ def restore_page_on_load(
         return no_update, True
 
     # Only show the resume dialog when the user landed on the root page.
-    # If they navigated to /demo, /contact, /about etc. let them be.
     if pathname and pathname != "/":
         return no_update, True
+
+    # Pages beyond /startup need user_info to determine a valid target.
+    # If it hasn't hydrated yet, wait for the next firing.
+    if last_page in ("/prediction", "/ending", "/final") and not user_info:
+        raise PreventUpdate
 
     rounds_played = 0
     current_round = 0
@@ -2886,8 +2894,6 @@ def restore_page_on_load(
             "max_rounds": MAX_ROUNDS,
         }
         return dialog_data, True
-
-    return no_update, True
 
 
 # --- Resume dialog: render, continue, start-over ---
@@ -3094,38 +3100,44 @@ def initialize_data_on_url_change(
     bool,
     int,
 ]:
-    """Initialize data when URL changes or on first load"""
-    # Handle URL-driven initialization without requiring existing data
-    if pathname in ('/ending', '/final'):
-        return no_update, no_update, no_update, no_update, no_update, no_update, no_update
-    if pathname == '/prediction':
-        # For format B/C: require upload, don't auto-load example dataset (even if stores currently have example data).
-        fmt = str((user_info or {}).get("format") or "A")
-        uploaded_path = (user_info or {}).get("uploaded_data_path")
-        if fmt in ("B", "C") and not uploaded_path:
-            return None, None, None, False, "", False, 0
+    """Initialize data when URL changes to /prediction without existing data.
 
-        # If prediction page and data already present, preserve.
-        if full_df_data is not None:
-            return no_update, no_update, no_update, no_update, no_update, no_update, no_update
-    
-    # Initialize fresh example data (startup or first load)
+    Only loads fresh example data when navigating to /prediction and no data
+    exists yet.  All other pages are left alone so that persisted localStorage
+    stores are never overwritten (critical for the resume flow).
+    """
+    _no_change = (no_update, no_update, no_update, no_update, no_update, no_update, no_update)
+
+    if pathname != '/prediction':
+        return _no_change
+
+    # For format B/C: require upload, don't auto-load example dataset.
+    fmt = str((user_info or {}).get("format") or "A")
+    uploaded_path = (user_info or {}).get("uploaded_data_path")
+    if fmt in ("B", "C") and not uploaded_path:
+        return None, None, None, False, "", False, 0
+
+    # Data already present — preserve (handles resume and round transitions).
+    if full_df_data is not None:
+        return _no_change
+
+    # First visit to /prediction with no data: load fresh example data.
     full_df, events_df = load_glucose_data()
     df, random_start = get_random_data_window(full_df, DEFAULT_POINTS)
     full_df = full_df.with_columns(pl.lit(0.0).alias('prediction'))
     df = df.with_columns(pl.lit(0.0).alias('prediction'))
-    
+
     with start_action(action_type=u"initialize_data_on_url_change") as action:
         action.log(message_type="new_random_start", random_start=random_start)
-    
+
     return (
         convert_df_to_dict(full_df),
         convert_df_to_dict(df),
         convert_events_df_to_dict(events_df),
         True,
         'example.csv',
-        False,  # Keep randomization flag false so slider can be randomized
-        random_start  # Update the initial slider value
+        False,
+        random_start,
     )
 
 # Separate callback for file upload handling
