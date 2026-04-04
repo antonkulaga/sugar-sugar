@@ -6,12 +6,11 @@ en:
     go_to_start: "Go to Start Page"
     loading: "Loading..."
     continue: "Continue"
-    back: "Back"
-    home: "Home"
+    game: "Game"
     finish_exit: "Finish / Exit"
-    about: "About"
+    the_study: "The Study"
     contact_us: "Contact us"
-    demo: "Demo"
+    video_instructions: "Video instructions"
 
   language:
     choose: "Language"
@@ -68,6 +67,9 @@ en:
     title: "About Sugar Sugar"
     body: "Sugar Sugar is a research tool designed to measure how accurately humans can predict future glucose trends."
     study_design_title: "Study design"
+    download_pdf_label: "Download study design (PDF)"
+    pdf_original_english_note: "(original in English)"
+    translation_note: "The text below is a translation. The original study design in English is available as a PDF above."
     github_link_label: "Project on GitHub"
 
   contact:
@@ -153,7 +155,7 @@ en:
     how_to_play: "How to play:"
     how_to_play_1: "1. Click and drag in the graph to add predictions"
     how_to_play_2: "2. Draw one line after another to create prediction curves"
-    how_to_play_3: "3. Try to predict at least 5 points to see your accuracy metrics"
+    how_to_play_3: "3. Draw your prediction to the end of the hidden area to submit"
 
   prediction:
     units_label: "Units:"
@@ -187,7 +189,7 @@ en:
   metrics:
     title: "Metrics"
     prediction_accuracy: "Prediction Accuracy"
-    placeholder_need_5: "Add at least 5 prediction points to see accuracy metrics"
+    placeholder_need_5: "Draw predictions on the chart to see accuracy metrics"
     title_accuracy_metrics: "Accuracy Metrics"
     no_metrics_available: "No metrics available"
     desc:
@@ -203,6 +205,14 @@ en:
     absolute_error: "Absolute Error"
     relative_error_pct: "Relative Error (%{pct})"
 
+  resume_dialog:
+    title: "Welcome back!"
+    message: "You have a previous session saved (round %{round} of %{total}). Would you like to continue where you left off or start over?"
+    message_no_round: "You have a previous session saved. Would you like to continue where you left off or start over?"
+    warning: "Please do not start over just because you are unhappy with your predictions — restarting skews the research data and undermines the study results."
+    continue_btn: "Continue"
+    start_over_btn: "Start Over"
+
   session_expired:
     title: "Session Expired"
     text: "Please start over from the beginning."
@@ -214,6 +224,9 @@ en:
     next_round: "Next round"
     view_complete_analysis: "View complete analysis"
     graph_explanation: "The chart shows the glucose window you predicted on. The orange dashed line separates the known history (left) from the hour you predicted (right). Your predictions are shown in red."
+    data_source_label: "Data source: %{source}"
+    round_motivation: "You can stop any time, but completing all %{total} rounds gives the best data. At least %{min_useful} rounds are needed for useful results — every extra round helps!"
+    local_storage_note: "Your progress is saved locally in this browser. You can take a break and resume later using the same browser."
 
   final:
     title: "Complete Analysis"
@@ -233,7 +246,7 @@ en:
     not_eligible_no_cgm: "B/C are only available if you said you have CGM data."
 
   results_disclaimer:
-    line1: "These scores measure prediction performance, not health status"
-    line2: "Do not use to adjust insulin, diet, or any medical decisions"
-    line3: "Continue following your healthcare provider's guidance"
+    line1: "These scores are for research purposes only"
+    line2: "Regardless of your results, do not change any medical decisions based on this app"
+    line3: "Always follow your healthcare provider's guidance"
 

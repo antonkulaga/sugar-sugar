@@ -14,6 +14,7 @@ from dash.dependencies import Input, Output, State
 from sugar_sugar.consent_notice_text import consent_notice_children
 from sugar_sugar.consent import ensure_consent_agreement_row, get_next_study_number
 from sugar_sugar.i18n import t, t_list
+from sugar_sugar.config import STORAGE_TYPE
 
 
 @lru_cache(maxsize=4)
@@ -35,52 +36,6 @@ class LandingPage(html.Div):
         project_root = Path(__file__).resolve().parents[2]
         screenshot_path = project_root / "images" / "screenshot.png"
         screenshot_src = _image_data_uri(screenshot_path)
-
-        language_picker = html.Div(
-            [
-                html.Button(
-                    [
-                        html.Img(src="/assets/flags/gb.svg", className="lang-flag"),
-                        html.Span("EN", className="lang-label"),
-                    ],
-                    id="lang-en",
-                    title="EN",
-                    **{"aria-label": "EN"},
-                    className="lang-btn" + (" active" if locale == "en" else ""),
-                ),
-                html.Button(
-                    [
-                        html.Img(src="/assets/flags/de.svg", className="lang-flag"),
-                        html.Span("DE", className="lang-label"),
-                    ],
-                    id="lang-de",
-                    title="DE",
-                    **{"aria-label": "DE"},
-                    className="lang-btn" + (" active" if locale == "de" else ""),
-                ),
-                html.Button(
-                    [
-                        html.Img(src="/assets/flags/ua.svg", className="lang-flag"),
-                        html.Span("UA", className="lang-label"),
-                    ],
-                    id="lang-uk",
-                    title="UA",
-                    **{"aria-label": "UA"},
-                    className="lang-btn" + (" active" if locale == "uk" else ""),
-                ),
-                html.Button(
-                    [
-                        html.Img(src="/assets/flags/ro.svg", className="lang-flag"),
-                        html.Span("RO", className="lang-label"),
-                    ],
-                    id="lang-ro",
-                    title="RO",
-                    **{"aria-label": "RO"},
-                    className="lang-btn" + (" active" if locale == "ro" else ""),
-                ),
-            ],
-            className="lang-picker",
-        )
 
         hero = dbc.Row(
             [
@@ -211,7 +166,7 @@ class LandingPage(html.Div):
                                 options=[{"label": f" {t('ui.landing.consent_acknowledge_label', locale=locale)}", "value": "ack"}],
                                 value=[],
                                 persistence=True,
-                                persistence_type="session",
+                                persistence_type=STORAGE_TYPE,
                                 style={"fontSize": "16px", "marginBottom": "10px"},
                             ),
                             dbc.Checklist(
@@ -219,7 +174,7 @@ class LandingPage(html.Div):
                                 options=[{"label": f" {t('ui.landing.consent_gdpr_label', locale=locale)}", "value": "gdpr"}],
                                 value=[],
                                 persistence=True,
-                                persistence_type="session",
+                                persistence_type=STORAGE_TYPE,
                                 style={"fontSize": "16px"},
                             ),
                             html.Hr(style={"margin": "14px 0"}),
@@ -232,7 +187,7 @@ class LandingPage(html.Div):
                                 options=[{"label": f" {t('ui.landing.consent_upload_own_data', locale=locale)}", "value": "upload_own_data"}],
                                 value=[],
                                 persistence=True,
-                                persistence_type="session",
+                                persistence_type=STORAGE_TYPE,
                                 style={"fontSize": "16px", "marginBottom": "10px"},
                             ),
                             dbc.Checklist(
@@ -240,7 +195,7 @@ class LandingPage(html.Div):
                                 options=[{"label": f" {t('ui.landing.consent_play_only', locale=locale)}", "value": "play_only"}],
                                 value=[],
                                 persistence=True,
-                                persistence_type="session",
+                                persistence_type=STORAGE_TYPE,
                                 style={"fontSize": "16px"},
                             ),
                             dbc.Checklist(
@@ -248,7 +203,7 @@ class LandingPage(html.Div):
                                 options=[{"label": f" {t('ui.landing.consent_receive_results', locale=locale)}", "value": "receive_results"}],
                                 value=[],
                                 persistence=True,
-                                persistence_type="session",
+                                persistence_type=STORAGE_TYPE,
                                 style={"fontSize": "16px", "marginTop": "10px"},
                             ),
                             dbc.Checklist(
@@ -256,7 +211,7 @@ class LandingPage(html.Div):
                                 options=[{"label": f" {t('ui.landing.consent_keep_updated', locale=locale)}", "value": "keep_updated"}],
                                 value=[],
                                 persistence=True,
-                                persistence_type="session",
+                                persistence_type=STORAGE_TYPE,
                                 style={"fontSize": "16px", "marginTop": "10px"},
                             ),
                         ],
@@ -304,13 +259,12 @@ class LandingPage(html.Div):
 
         layout = dbc.Container(
             [
-                language_picker,
                 hero,
                 html.Div(style={"height": "18px"}),
                 study_info,
                 html.Div(style={"height": "18px"}),
                 consent_notice_card,
-                dcc.Store(id="consent-scroll-complete", data=False, storage_type="session"),
+                dcc.Store(id="consent-scroll-complete", data=False, storage_type=STORAGE_TYPE),
                 dcc.Interval(id="consent-scroll-poll", interval=500, n_intervals=0),
             ],
             fluid=False,

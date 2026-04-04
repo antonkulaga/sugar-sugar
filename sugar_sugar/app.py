@@ -15,6 +15,7 @@ import dash_bootstrap_components as dbc
 import os
 import sys
 import typer
+from flask import send_file as flask_send_file, request as flask_request
 import uuid
 from dotenv import load_dotenv
 from eliot import start_action, start_task
@@ -53,6 +54,8 @@ from sugar_sugar.config import (
     DASH_HOST,
     DASH_PORT,
     DEBUG_MODE,
+    MAX_ROUNDS,
+    STORAGE_TYPE,
 )
 import sugar_sugar.config as sugar_sugar_config
 from sugar_sugar.components.glucose import GlucoseChart
@@ -67,12 +70,12 @@ from sugar_sugar.components.ending import EndingPage
 from sugar_sugar.components.navbar import NavBar
 from sugar_sugar.generic_sources_metadata import load_generic_sources_metadata
 from sugar_sugar.contact_info import load_contact_info
+from sugar_sugar.static_markdown import static_markdown_autosize_iframe
 
 # Type aliases for clarity
 TableData = List[Dict[str, str]]  # Format for the predictions table data
 Figure = go.Figure  # Plotly figure type
 
-MAX_ROUNDS: int = 12
 GLUCOSE_MGDL_PER_MMOLL: float = 18.0
 
 FORMAT_ORDER: dict[str, int] = {"C": 0, "B": 1, "A": 2}
@@ -215,6 +218,16 @@ app = dash.Dash(
 )
 app.title = "Sugar Sugar - Glucose Prediction Game"
 
+server = app.server
+
+@server.route("/download-study-pdf")
+def _download_study_pdf():
+    locale = flask_request.args.get("locale", "en")
+    pdf_path, _ = _study_design_pdf_info(locale)
+    if pdf_path is not None:
+        return flask_send_file(str(pdf_path), mimetype="application/pdf", as_attachment=True, download_name=pdf_path.name)
+    return "PDF not found", 404
+
 app.clientside_callback(
     "function() { return window.navigator.userAgent || ''; }",
     Output('user-agent', 'data'),
@@ -279,6 +292,7 @@ ending_page = EndingPage()
 # When _CHART_MODE env var is set, pre-populate stores for the prediction page
 # so the debug reloader preserves the state across forks.
 _is_chart_mode = os.environ.get("_CHART_MODE") == "1"
+_clean_storage = os.environ.get("_CLEAN_STORAGE") == "1"
 _chart_source = os.environ.get("_CHART_SOURCE", "example.csv")
 _chart_is_example = _chart_file_env is None
 _chart_unit = os.environ.get("_CHART_UNIT", "mg/dL")
@@ -316,24 +330,39 @@ else:
     _chart_user_info = None
 
 app.layout = html.Div([
-    dcc.Location(id='url', refresh=False, pathname="/prediction" if _is_chart_mode else "/"),
-    dcc.Store(id='user-info-store', data=_chart_user_info),
+    dcc.Location(id='url', refresh=False, **({'pathname': '/prediction'} if _is_chart_mode else {})),
+    dcc.Store(id='user-info-store', data=_chart_user_info, storage_type=STORAGE_TYPE),
     dcc.Store(id='last-click-time', data=0),
     dcc.Store(id='consent-scroll-request', data=0),
-    dcc.Store(id='current-window-df', data=example_initial_df_store),
-    dcc.Store(id='full-df', data=example_full_df_store),
-    dcc.Store(id='events-df', data=example_events_df_store),
-    dcc.Store(id='is-example-data', data=_chart_is_example),
-    dcc.Store(id='data-source-name', data=_chart_source if _is_chart_mode else "example.csv"),
-    dcc.Store(id='randomization-initialized', data=_is_chart_mode),
-    dcc.Store(id='glucose-chart-mode', data={'hide_last_hour': True}),
-    dcc.Store(id='glucose-unit', data=_chart_unit if _is_chart_mode else 'mg/dL', storage_type='session'),
-    dcc.Store(id='interface-language', data=_chart_locale if _is_chart_mode else 'en', storage_type='session'),
-    dcc.Store(id='user-agent', data=None, storage_type='session'),
-    dcc.Store(id='initial-slider-value', data=example_initial_slider_value),
+    dcc.Store(id='current-window-df', data=example_initial_df_store, storage_type=STORAGE_TYPE),
+    dcc.Store(id='full-df', data=example_full_df_store, storage_type=STORAGE_TYPE),
+    dcc.Store(id='events-df', data=example_events_df_store, storage_type=STORAGE_TYPE),
+    dcc.Store(id='is-example-data', data=_chart_is_example, storage_type=STORAGE_TYPE),
+    dcc.Store(id='data-source-name', data=_chart_source if _is_chart_mode else "example.csv", storage_type=STORAGE_TYPE),
+    dcc.Store(id='randomization-initialized', data=_is_chart_mode, storage_type=STORAGE_TYPE),
+    dcc.Store(id='glucose-chart-mode', data={'hide_last_hour': True}, storage_type=STORAGE_TYPE),
+    dcc.Store(id='glucose-unit', data=_chart_unit if _is_chart_mode else 'mg/dL', storage_type=STORAGE_TYPE),
+    dcc.Store(id='interface-language', data=_chart_locale if _is_chart_mode else 'en', storage_type=STORAGE_TYPE),
+    dcc.Store(id='user-agent', data=None, storage_type=STORAGE_TYPE),
+    dcc.Store(id='initial-slider-value', data=example_initial_slider_value, storage_type=STORAGE_TYPE),
+    # Tracks the last page the user reached so we can restore it on reload (local storage only).
+    dcc.Store(id='last-visited-page', data=None, storage_type=STORAGE_TYPE),
+    # One-shot flag: prevents the restore-redirect from firing more than once per session.
+    dcc.Store(id='page-restore-done', data=False, storage_type='memory'),
+    # Tracks whether the user has already interacted with the app in this browser tab.
+    # Uses sessionStorage: survives full page reloads (navbar clicks) but clears when
+    # the tab is closed.  restore_page_on_load uses this to decide whether to show the
+    # resume dialog (fresh session) or silently redirect (tab-switch-back).
+    dcc.Store(id='session-active', data=False, storage_type='session'),
+    # Set to True by --clean flag; consumed once by a clientside callback to wipe localStorage.
+    dcc.Store(id='clean-storage-flag', data=_clean_storage, storage_type='memory'),
+    # Holds the target page for the resume dialog; set by restore_page_on_load.
+    dcc.Store(id='resume-dialog-target', data=None, storage_type='memory'),
 
     html.Div(id='mobile-warning', style={'margin': '12px 0'}),
     html.Div(id='scroll-to-top-trigger', style={'display': 'none'}),
+
+    html.Div(id='resume-dialog-container', children=[], disable_n_clicks=True),
 
     html.Div(id='navbar-container', children=[], disable_n_clicks=True),
     
@@ -359,6 +388,7 @@ def reset_glucose_unit_on_start_page(pathname: Optional[str]) -> str:
      Input('lang-de', 'n_clicks'),
      Input('lang-uk', 'n_clicks'),
      Input('lang-ro', 'n_clicks')],
+    [State('interface-language', 'data')],
     prevent_initial_call=True
 )
 def set_interface_language(
@@ -366,19 +396,20 @@ def set_interface_language(
     n_de: Optional[int],
     n_uk: Optional[int],
     n_ro: Optional[int],
+    current_language: Optional[str],
 ) -> str:
-    """Set the interface language (session-scoped) from landing page flag buttons."""
-    _ = (n_en, n_de, n_uk, n_ro)
+    """Set the interface language from navbar flag buttons."""
     triggered = ctx.triggered_id
-    if triggered == 'lang-en':
-        return 'en'
-    if triggered == 'lang-de':
-        return 'de'
-    if triggered == 'lang-uk':
-        return 'uk'
-    if triggered == 'lang-ro':
-        return 'ro'
-    raise PreventUpdate
+    if not triggered:
+        raise PreventUpdate
+    click_value = {'lang-en': n_en, 'lang-de': n_de, 'lang-uk': n_uk, 'lang-ro': n_ro}.get(triggered)
+    if not click_value:
+        raise PreventUpdate
+    lang_map = {'lang-en': 'en', 'lang-de': 'de', 'lang-uk': 'uk', 'lang-ro': 'ro'}
+    new_lang = lang_map.get(triggered)
+    if not new_lang or new_lang == current_language:
+        raise PreventUpdate
+    return new_lang
 
 
 @app.callback(
@@ -435,13 +466,227 @@ def update_prediction_uploaded_data_consent_ui(
     )
 
 
+_STATEFUL_PAGES = frozenset({'/prediction', '/ending'})
+
+
+@app.callback(
+    [Output('page-content', 'children', allow_duplicate=True),
+     Output('mobile-warning', 'children', allow_duplicate=True),
+     Output('navbar-container', 'children', allow_duplicate=True)],
+    [Input('interface-language', 'data')],
+    [State('url', 'pathname'),
+     State('user-info-store', 'data'),
+     State('user-agent', 'data'),
+     State('full-df', 'data'),
+     State('glucose-unit', 'data')],
+    prevent_initial_call=True,
+)
+def update_on_language_change(
+    interface_language: Optional[str],
+    pathname: Optional[str],
+    user_info: Optional[Dict[str, Any]],
+    user_agent: Optional[str],
+    full_df_data: Optional[Dict],
+    glucose_unit: Optional[str],
+) -> tuple:
+    """Re-render page content and navbar when language changes.
+
+    Pages with interactive state (prediction chart, ending) only get
+    a navbar refresh -- page content is left untouched via per-element callbacks.
+    """
+    locale = normalize_locale(interface_language)
+    navbar = NavBar(locale=locale, current_page=pathname or "/")
+
+    if pathname in _STATEFUL_PAGES:
+        return no_update, no_update, navbar
+
+    warning_content = render_mobile_warning(user_agent, locale=locale)
+    if pathname == '/final':
+        if user_info:
+            return create_final_layout(full_df_data, user_info, glucose_unit, locale=locale), warning_content, navbar
+        return no_update, no_update, navbar
+    if pathname == "/consent-form":
+        return ConsentFormPage(locale=locale), warning_content, navbar
+    if pathname == '/startup':
+        return StartupPage(locale=locale), warning_content, navbar
+    if pathname == '/about':
+        return create_about_page(locale=locale), warning_content, navbar
+    if pathname == '/contact':
+        return create_contact_page(locale=locale), warning_content, navbar
+    if pathname == '/demo':
+        return create_demo_page(locale=locale), warning_content, navbar
+    # Landing page
+    return LandingPage(locale=locale), warning_content, navbar
+
+
+@app.callback(
+    [Output('header-app-title', 'children'),
+     Output('header-description', 'children'),
+     Output('header-how-to-play', 'children'),
+     Output('header-data-source-label', 'children'),
+     Output('header-upload-prompt', 'children'),
+     Output('use-example-data-button', 'children'),
+     Output('header-time-window-label', 'children'),
+     Output('prediction-units-label', 'children'),
+     Output('prediction-consent-label', 'children'),
+     Output('submit-button', 'children'),
+     Output('finish-study-button', 'children')],
+    [Input('interface-language', 'data')],
+    [State('url', 'pathname')],
+    prevent_initial_call=True,
+)
+def update_prediction_text_on_language_change(
+    interface_language: Optional[str],
+    pathname: Optional[str],
+) -> tuple:
+    """Update translatable text on the prediction page when language changes mid-game."""
+    if pathname != '/prediction':
+        return tuple(no_update for _ in range(11))
+
+    locale = normalize_locale(interface_language)
+    return (
+        t("ui.common.app_title", locale=locale),
+        [
+            t("ui.header.description_1", locale=locale) + " ",
+            html.Br(),
+            t("ui.header.description_2", locale=locale) + " ",
+            t("ui.header.description_3", locale=locale),
+        ],
+        [
+            html.Strong(t("ui.header.how_to_play", locale=locale)),
+            html.Br(),
+            t("ui.header.how_to_play_1", locale=locale),
+            html.Br(),
+            t("ui.header.how_to_play_2", locale=locale),
+            html.Br(),
+            t("ui.header.how_to_play_3", locale=locale),
+        ],
+        t("ui.header.current_data_source", locale=locale),
+        [
+            t("ui.header.upload_prompt_1", locale=locale),
+            html.A(t("ui.header.upload_prompt_2", locale=locale)),
+        ],
+        t("ui.header.use_example_data", locale=locale),
+        t("ui.header.time_window_label", locale=locale),
+        t("ui.prediction.units_label", locale=locale),
+        t("ui.startup.data_usage_consent_label", locale=locale),
+        t("ui.submit.submit", locale=locale),
+        t("ui.common.finish_exit", locale=locale),
+    )
+
+
+@app.callback(
+    [Output('ending-title', 'children'),
+     Output('ending-disclaimer-line1', 'children'),
+     Output('ending-disclaimer-line2', 'children'),
+     Output('ending-disclaimer-line3', 'children'),
+     Output('ending-round-info', 'children'),
+     Output('ending-round-motivation', 'children'),
+     Output('ending-units-line', 'children'),
+     Output('ending-graph-explanation', 'children'),
+     Output('ending-prediction-results-title', 'children'),
+     Output('ending-prediction-table', 'data'),
+     Output('ending-prediction-table', 'columns'),
+     Output('ending-metrics-container', 'children'),
+     Output('ending-local-storage-note', 'children'),
+     Output('finish-study-button-ending', 'children'),
+     Output('next-round-button', 'children'),
+     Output('ending-switch-format-title', 'children'),
+     Output('switch-format-c', 'children'),
+     Output('switch-format-a', 'children'),
+     Output('switch-format-b', 'children')],
+    [Input('interface-language', 'data')],
+    [State('url', 'pathname'),
+     State('user-info-store', 'data'),
+     State('glucose-unit', 'data')],
+    prevent_initial_call=True,
+)
+def update_ending_text_on_language_change(
+    interface_language: Optional[str],
+    pathname: Optional[str],
+    user_info: Optional[Dict[str, Any]],
+    glucose_unit: Optional[str],
+) -> tuple:
+    """Update translatable text on the ending page when language changes."""
+    n_outputs = 19
+    if pathname != '/ending':
+        return tuple(no_update for _ in range(n_outputs))
+
+    locale = normalize_locale(interface_language)
+    unit = glucose_unit if glucose_unit in ('mg/dL', 'mmol/L') else 'mg/dL'
+
+    rounds_played = len(user_info.get('rounds') or []) if user_info else 0
+    max_rounds = int(user_info.get('max_rounds') or MAX_ROUNDS) if user_info else MAX_ROUNDS
+    current_round_number = int(user_info.get('current_round_number') or rounds_played) if user_info else rounds_played
+    is_last_round = current_round_number >= max_rounds
+
+    metric_label_map: dict[str, str] = {
+        "Actual Glucose": t("ui.table.actual_glucose", locale=locale),
+        "Predicted": t("ui.table.predicted", locale=locale),
+        "Absolute Error": t("ui.table.absolute_error", locale=locale),
+        "Relative Error (%)": t("ui.table.relative_error_pct", locale=locale, pct="%"),
+    }
+
+    table_data: list[dict[str, str]] = no_update
+    table_columns: list[dict[str, str]] = no_update
+    if user_info and 'prediction_table_data' in user_info:
+        raw_table = _convert_table_data_units(user_info['prediction_table_data'], unit)
+        table_data = []
+        for row in raw_table:
+            new_row = dict(row)
+            new_row["metric"] = metric_label_map.get(str(row.get("metric", "")), str(row.get("metric", "")))
+            table_data.append(new_row)
+        table_columns = [{'name': t("ui.table.metric_header", locale=locale), 'id': 'metric'}] + [
+            {'name': f'T{i}', 'id': f't{i}', 'type': 'text'}
+            for i in range(len(raw_table[0]) - 1)
+            if raw_table and raw_table[1].get(f't{i}', '-') != '-'
+        ]
+
+    metrics_display: Any = no_update
+    if user_info and 'prediction_table_data' in user_info:
+        raw_table = _convert_table_data_units(user_info['prediction_table_data'], unit)
+        metrics_comp = MetricsComponent()
+        stored_metrics = metrics_comp._calculate_metrics_from_table_data(raw_table) if len(raw_table) >= 2 else None
+        metrics_display = MetricsComponent.create_ending_metrics_display(stored_metrics, locale=locale) if stored_metrics else [
+            html.H3(t("ui.metrics.title_accuracy_metrics", locale=locale), style={'textAlign': 'center'}),
+            html.Div(
+                t("ui.metrics.no_metrics_available", locale=locale),
+                style={'color': 'gray', 'fontStyle': 'italic', 'fontSize': '16px', 'padding': '10px', 'textAlign': 'center'}
+            )
+        ]
+
+    finish_button_text = t("ui.ending.view_complete_analysis", locale=locale) if is_last_round else t("ui.common.finish_exit", locale=locale)
+
+    return (
+        t("ui.ending.title", locale=locale),
+        t("ui.results_disclaimer.line1", locale=locale),
+        t("ui.results_disclaimer.line2", locale=locale),
+        t("ui.results_disclaimer.line3", locale=locale),
+        t("ui.common.round_of", locale=locale, current=current_round_number, total=max_rounds),
+        t("ui.ending.round_motivation", locale=locale, total=max_rounds, min_useful=max(1, max_rounds // 2)),
+        t("ui.ending.units_line", locale=locale, unit=unit),
+        t("ui.ending.graph_explanation", locale=locale),
+        t("ui.ending.prediction_results", locale=locale),
+        table_data,
+        table_columns,
+        metrics_display,
+        t("ui.ending.local_storage_note", locale=locale),
+        finish_button_text,
+        t("ui.ending.next_round", locale=locale),
+        t("ui.switch_format.title", locale=locale),
+        t("ui.switch_format.try_c", locale=locale),
+        t("ui.switch_format.try_a", locale=locale),
+        t("ui.switch_format.try_b", locale=locale),
+    )
+
+
 @app.callback(
     [Output('page-content', 'children'),
      Output('mobile-warning', 'children'),
      Output('navbar-container', 'children')],
-    [Input('url', 'pathname'),
-     Input('interface-language', 'data')],
-    [State('user-info-store', 'data'),
+    [Input('url', 'pathname')],
+    [State('interface-language', 'data'),
+     State('user-info-store', 'data'),
      State('full-df', 'data'),
      State('current-window-df', 'data'),
      State('events-df', 'data'),
@@ -459,17 +704,9 @@ def display_page(
     glucose_unit: Optional[str],
     user_agent: Optional[str],
 ) -> tuple[html.Div, Optional[html.Div], html.Div]:
-    triggered = ctx.triggered_id
     has_ptd = bool(user_info and 'prediction_table_data' in user_info) if user_info else False
     has_full = bool(full_df_data)
-    print(f"DEBUG display_page: triggered={triggered} pathname={pathname} has_user_info={user_info is not None} has_prediction_table_data={has_ptd} has_full_df={has_full} ctx.triggered={ctx.triggered}")
-    # Language buttons only exist on the landing page. If `interface-language`
-    # fires on /ending or /final it is a spurious session-store re-sync that
-    # would re-render the page while State values may be stale, producing a
-    # truncated layout.
-    if triggered == 'interface-language' and pathname in ('/ending', '/final'):
-        raise PreventUpdate
-
+    print(f"DEBUG display_page: pathname={pathname} has_user_info={user_info is not None} has_prediction_table_data={has_ptd} has_full_df={has_full}")
     locale = normalize_locale(interface_language)
     navbar = NavBar(locale=locale, current_page=pathname or "/")
     
@@ -532,67 +769,18 @@ def display_page(
         if pathname == '/demo':
             return create_demo_page(locale=locale), warning_content, navbar
         # Default route: landing page
-        return (LandingPage(locale=locale), warning_content, create_landing_navbar(locale=locale))
-
-def create_landing_navbar(*, locale: str) -> html.Div:
-    """Create a minimal navbar for the landing page with only About and Contact buttons."""
-    about_button = html.A(
-        t("ui.common.about", locale=locale),
-        id="navbar-about-button",
-        href="/about",
-        className="ui small basic button",
-        style={
-            "fontWeight": "600",
-            "fontSize": "14px",
-        },
-    )
-
-    contact_button = html.A(
-        t("ui.common.contact_us", locale=locale),
-        id="navbar-contact-button",
-        href="/contact",
-        className="ui small basic button",
-        style={
-            "fontWeight": "600",
-            "fontSize": "14px",
-            "marginLeft": "8px",
-        },
-    )
-
-    demo_button = html.A(
-        t("ui.common.demo", locale=locale),
-        id="navbar-demo-button",
-        href="/demo",
-        className="ui small basic button",
-        style={
-            "fontWeight": "600",
-            "fontSize": "14px",
-            "marginLeft": "8px",
-        },
-    )
-
-    return html.Div(
-        [about_button, contact_button, demo_button],
-        style={
-            "backgroundColor": "#1e88e5",
-            "padding": "12px 20px",
-            "boxShadow": "0 2px 4px rgba(0,0,0,0.1)",
-            "display": "flex",
-            "alignItems": "center",
-            "justifyContent": "flex-start",
-            "marginBottom": "20px",
-        },
-    )
+        return (LandingPage(locale=locale), warning_content, navbar)
 
 from dash import html
 
 def create_info_page(*, locale: str, title: str, body: str) -> html.Div:
     return html.Div(
         [
-            html.H1(title),
-            html.Div(body, style={"marginBottom": "14px"}),
+            html.H1(title, disable_n_clicks=True),
+            html.Div(body, style={"marginBottom": "14px"}, disable_n_clicks=True),
         ],
-        className="info-page"
+        className="info-page",
+        disable_n_clicks=True,
     )
 
 @lru_cache(maxsize=4)
@@ -612,6 +800,24 @@ def _study_design_markdown(locale: str) -> str:
     return ""
 
 
+def _study_design_pdf_info(locale: str) -> tuple[Path | None, bool]:
+    """Return (pdf_path, is_original_english).
+
+    *is_original_english* is True when the PDF found is the base (English)
+    file and the requested locale is not English — i.e. no locale-specific
+    PDF exists.
+    """
+    loc = normalize_locale(locale)
+    base_dir = project_root / "data" / "input" / "study_design"
+    localized = base_dir / f"study_design.{loc}.pdf"
+    if localized.exists():
+        return localized, False
+    base = base_dir / "study_design.pdf"
+    if base.exists():
+        return base, loc != "en"
+    return None, False
+
+
 def create_about_page(*, locale: str) -> html.Div:
     study_md = _study_design_markdown(locale)
     children: list[Any] = [
@@ -629,27 +835,74 @@ def create_about_page(*, locale: str) -> html.Div:
         ),
     ]
     if study_md:
+        study_header_children: list[Any] = [
+            html.H2(
+                t("ui.about.study_design_title", locale=locale),
+                style={"marginBottom": "16px"},
+            ),
+        ]
+        pdf_path, pdf_is_english_original = _study_design_pdf_info(locale)
+        if pdf_path is not None:
+            pdf_children: list[Any] = [
+                html.A(
+                    t("ui.about.download_pdf_label", locale=locale),
+                    href=f"/download-study-pdf?locale={normalize_locale(locale)}",
+                    target="_blank",
+                    rel="noopener noreferrer",
+                    className="ui blue basic button",
+                ),
+            ]
+            if pdf_is_english_original:
+                pdf_children.append(
+                    html.Span(
+                        t("ui.about.pdf_original_english_note", locale=locale),
+                        style={
+                            "marginLeft": "10px",
+                            "color": "#64748b",
+                            "fontSize": "14px",
+                            "fontStyle": "italic",
+                        },
+                    )
+                )
+            study_header_children.append(
+                html.Div(
+                    pdf_children,
+                    style={
+                        "marginBottom": "16px",
+                        "display": "flex",
+                        "alignItems": "center",
+                        "flexWrap": "wrap",
+                        "gap": "4px",
+                    },
+                    disable_n_clicks=True,
+                )
+            )
+
+        if pdf_is_english_original:
+            study_header_children.append(
+                html.Div(
+                    t("ui.about.translation_note", locale=locale),
+                    style={
+                        "color": "#64748b",
+                        "fontSize": "14px",
+                        "fontStyle": "italic",
+                        "marginBottom": "12px",
+                    },
+                    disable_n_clicks=True,
+                )
+            )
+
         children.extend(
             [
                 html.Hr(style={"margin": "24px 0"}),
-                html.H2(
-                    t("ui.about.study_design_title", locale=locale),
-                    style={"marginBottom": "16px"},
-                ),
-                html.Div(
-                    dcc.Markdown(study_md, link_target="_blank"),
-                    className="study-design-content",
-                    style={
-                        "overflowY": "auto",
-                        "border": "1px solid rgba(15, 23, 42, 0.10)",
-                        "borderRadius": "12px",
-                        "padding": "20px 24px",
-                        "background": "rgba(255,255,255,0.75)",
-                    },
+                *study_header_children,
+                static_markdown_autosize_iframe(
+                    study_md,
+                    title=t("ui.about.study_design_title", locale=locale),
                 ),
             ]
         )
-    return html.Div(children, className="info-page")
+    return html.Div(children, className="info-page", disable_n_clicks=True)
 
 
 def create_contact_page(*, locale: str) -> html.Div:
@@ -823,7 +1076,7 @@ def create_contact_page(*, locale: str) -> html.Div:
             )
         )
 
-    return html.Div(page_children, className="info-page")
+    return html.Div(page_children, className="info-page", disable_n_clicks=True)
 
 
 def create_demo_page(*, locale: str) -> html.Div:
@@ -851,6 +1104,7 @@ def create_prediction_layout(*, locale: str, format_value: str, user_info: Dict[
             [
                 html.Div(
                     t("ui.startup.data_usage_consent_label", locale=locale),
+                    id='prediction-consent-label',
                     style={'fontWeight': '600', 'marginBottom': '8px'},
                 ),
                 dcc.Checklist(
@@ -887,7 +1141,7 @@ def create_prediction_layout(*, locale: str, format_value: str, user_info: Dict[
             'marginBottom': '10px'
         }),
         html.Div([
-            html.Div(t("ui.prediction.units_label", locale=locale), style={'fontWeight': '600', 'marginRight': '10px'}),
+            html.Div(t("ui.prediction.units_label", locale=locale), id='prediction-units-label', style={'fontWeight': '600', 'marginRight': '10px'}),
             dbc.RadioItems(
                 id='glucose-unit-selector',
                 options=[
@@ -1012,7 +1266,7 @@ def show_upload_required_alert(
         children += [
             html.Br(),
             html.Button(
-                t("ui.common.back", locale=locale) + " → " + t("ui.final.title", locale=locale),
+                t("ui.common.game", locale=locale) + " → " + t("ui.final.title", locale=locale),
                 id="back-to-final-from-upload",
                 className="ui small button",
                 style={"paddingLeft": "0", "marginTop": "6px"},
@@ -1143,18 +1397,52 @@ def create_ending_layout(
     show_switch_data_consent = False
     switch_data_consent_value: list[str] = []
 
+    data_source_name = str(user_info.get('data_source_name') or '') if user_info else ''
+    meta = GENERIC_SOURCES_METADATA.get(Path(data_source_name).name) if data_source_name else None
+
+    subject_parts: list[str] = []
+    if data_source_name:
+        subject_parts.append(t("ui.ending.data_source_label", locale=locale, source=Path(data_source_name).name))
+    if meta:
+        gender_raw = str(meta.gender or "").strip().lower()
+        gender_display = (
+            t(f"ui.startup.gender_{gender_raw}", locale=locale)
+            if gender_raw in ("male", "female", "na")
+            else meta.gender
+        )
+        subject_parts.append(
+            f"{t('ui.startup.age_label', locale=locale)}: {meta.age} · "
+            f"{t('ui.startup.gender_label', locale=locale)}: {gender_display} · "
+            f"{t('ui.header.weight_label', locale=locale)}: {meta.weight}"
+        )
+    elif user_info:
+        age = user_info.get('age')
+        gender_raw = str(user_info.get('gender') or "").strip().lower()
+        if age:
+            gender_display = (
+                t(f"ui.startup.gender_{gender_raw}", locale=locale)
+                if gender_raw in ("male", "female", "na")
+                else (user_info.get('gender') or "")
+            )
+            parts = [f"{t('ui.startup.age_label', locale=locale)}: {age}"]
+            if gender_display:
+                parts.append(f"{t('ui.startup.gender_label', locale=locale)}: {gender_display}")
+            subject_parts.append(" · ".join(parts))
+
+    subject_info_line = " — ".join(subject_parts) if subject_parts else ""
+
     return html.Div([
-        html.H1(t("ui.ending.title", locale=locale), style={
+        html.H1(t("ui.ending.title", locale=locale), id='ending-title', style={
             'textAlign': 'center', 
             'marginBottom': '20px',
-            'fontSize': 'clamp(24px, 4vw, 48px)',  # Responsive font size
+            'fontSize': 'clamp(24px, 4vw, 48px)',
             'padding': '0 10px'
         }),
         html.Div(
             [
-                html.P(t("ui.results_disclaimer.line1", locale=locale), style={'margin': '0'}),
-                html.P(t("ui.results_disclaimer.line2", locale=locale), style={'margin': '0'}),
-                html.P(t("ui.results_disclaimer.line3", locale=locale), style={'margin': '0'}),
+                html.P(t("ui.results_disclaimer.line1", locale=locale), id='ending-disclaimer-line1', style={'margin': '0'}),
+                html.P(t("ui.results_disclaimer.line2", locale=locale), id='ending-disclaimer-line2', style={'margin': '0'}),
+                html.P(t("ui.results_disclaimer.line3", locale=locale), id='ending-disclaimer-line3', style={'margin': '0'}),
             ],
             disable_n_clicks=True,
             style={
@@ -1172,30 +1460,56 @@ def create_ending_layout(
         ),
         html.Div(
             t("ui.common.round_of", locale=locale, current=current_round_number, total=max_rounds),
+            id='ending-round-info',
             disable_n_clicks=True,
             style={
                 'textAlign': 'center',
-                'marginBottom': '15px',
+                'marginBottom': '2px',
                 'fontSize': 'clamp(16px, 2.5vw, 22px)',
                 'fontWeight': '600',
                 'color': '#2c5282'
             }
         ),
         html.Div(
-            t("ui.ending.units_line", locale=locale, unit=unit),
+            t("ui.ending.round_motivation", locale=locale, total=max_rounds, min_useful=max(1, max_rounds // 2)),
+            id='ending-round-motivation',
             disable_n_clicks=True,
             style={
                 'textAlign': 'center',
-                'marginBottom': '15px',
+                'marginBottom': '5px',
+                'color': '#4a5568',
+                'fontSize': '13px',
+                'fontStyle': 'italic',
+                'display': 'none' if is_last_round else 'block',
+            }
+        ),
+        html.Div(
+            subject_info_line,
+            disable_n_clicks=True,
+            style={
+                'textAlign': 'center',
+                'marginBottom': '5px',
+                'color': '#4a5568',
+                'fontSize': '13px',
+                'display': 'block' if subject_info_line else 'none',
+            }
+        ),
+        html.Div(
+            t("ui.ending.units_line", locale=locale, unit=unit),
+            id='ending-units-line',
+            disable_n_clicks=True,
+            style={
+                'textAlign': 'center',
+                'marginBottom': '5px',
                 'color': '#4a5568',
                 'fontSize': '14px'
             }
         ),
-        
         # Graph section - full window with known + predicted lines
         html.Div([
             html.P(
                 t("ui.ending.graph_explanation", locale=locale),
+                id='ending-graph-explanation',
                 style={
                     'textAlign': 'center',
                     'color': '#4a5568',
@@ -1240,7 +1554,7 @@ def create_ending_layout(
         
         # Prediction table section - only columns with actual predictions
         html.Div([
-            html.H3(t("ui.ending.prediction_results", locale=locale), style={
+            html.H3(t("ui.ending.prediction_results", locale=locale), id='ending-prediction-results-title', style={
                 'textAlign': 'center', 
                 'marginBottom': '15px',
                 'fontSize': 'clamp(18px, 3vw, 24px)'
@@ -1300,6 +1614,7 @@ def create_ending_layout(
         }),
         html.Div(
             metrics_display,
+            id='ending-metrics-container',
             disable_n_clicks=True,
             style={
                 'padding': 'clamp(10px, 2vw, 20px)',
@@ -1312,6 +1627,19 @@ def create_ending_layout(
             }
         ),
         
+        html.Div(
+            t("ui.ending.local_storage_note", locale=locale),
+            id='ending-local-storage-note',
+            disable_n_clicks=True,
+            style={
+                'textAlign': 'center',
+                'marginBottom': '10px',
+                'color': '#2d6a4f',
+                'fontSize': '13px',
+                'fontStyle': 'italic',
+                'display': 'block' if STORAGE_TYPE == 'local' else 'none',
+            }
+        ),
         html.Div([
             html.Button(
                 t("ui.ending.view_complete_analysis", locale=locale) if is_last_round else t("ui.common.finish_exit", locale=locale),
@@ -1371,6 +1699,7 @@ def create_ending_layout(
             [
                 html.H3(
                     t("ui.switch_format.title", locale=locale),
+                    id='ending-switch-format-title',
                     style={'textAlign': 'center', 'marginTop': '20px', 'marginBottom': '10px', 'fontSize': 'clamp(18px, 3vw, 24px)'},
                 ),
                 html.Div(id="switch-format-error", style={'marginBottom': '10px'}),
@@ -1681,7 +2010,7 @@ def create_final_layout(full_df_data: Optional[Dict], user_info: Dict[str, Any],
         })
 
     return html.Div([
-        html.H1(t("ui.final.title", locale=locale), style={
+        html.H1(t("ui.final.title", locale=locale), id='final-title', style={
             'textAlign': 'center',
             'marginBottom': '10px',
             'fontSize': 'clamp(24px, 4vw, 48px)',
@@ -1689,9 +2018,9 @@ def create_final_layout(full_df_data: Optional[Dict], user_info: Dict[str, Any],
         }),
         html.Div(
             [
-                html.P(t("ui.results_disclaimer.line1", locale=locale), style={'margin': '0'}),
-                html.P(t("ui.results_disclaimer.line2", locale=locale), style={'margin': '0'}),
-                html.P(t("ui.results_disclaimer.line3", locale=locale), style={'margin': '0'}),
+                html.P(t("ui.results_disclaimer.line1", locale=locale), id='final-disclaimer-line1', style={'margin': '0'}),
+                html.P(t("ui.results_disclaimer.line2", locale=locale), id='final-disclaimer-line2', style={'margin': '0'}),
+                html.P(t("ui.results_disclaimer.line3", locale=locale), id='final-disclaimer-line3', style={'margin': '0'}),
             ],
             disable_n_clicks=True,
             style={
@@ -1709,6 +2038,7 @@ def create_final_layout(full_df_data: Optional[Dict], user_info: Dict[str, Any],
         ),
         html.Div(
             t("ui.final.rounds_played", locale=locale, played=len(rounds), total=max_rounds),
+            id='final-rounds-played',
             disable_n_clicks=True,
             style={
                 'textAlign': 'center',
@@ -1720,8 +2050,8 @@ def create_final_layout(full_df_data: Optional[Dict], user_info: Dict[str, Any],
         ),
         html.Div(
             [
-                html.H3(t("ui.final.ranking_title", locale=locale), style={'textAlign': 'center', 'marginBottom': '10px'}),
-                html.Ul([html.Li(line) for line in ranking_lines], style={'margin': '0 auto', 'maxWidth': '760px'}),
+                html.H3(t("ui.final.ranking_title", locale=locale), id='final-ranking-title', style={'textAlign': 'center', 'marginBottom': '10px'}),
+                html.Ul([html.Li(line) for line in ranking_lines], id='final-ranking-list', style={'margin': '0 auto', 'maxWidth': '760px'}),
             ],
             disable_n_clicks=True,
             style={
@@ -1745,6 +2075,7 @@ def create_final_layout(full_df_data: Optional[Dict], user_info: Dict[str, Any],
                 if played_formats
                 else ""
             ),
+            id='final-played-formats',
             disable_n_clicks=True,
             style={
                 'textAlign': 'center',
@@ -1756,6 +2087,7 @@ def create_final_layout(full_df_data: Optional[Dict], user_info: Dict[str, Any],
         ),
         html.Div(
             overall_metrics_display,
+            id='final-overall-metrics-container',
             disable_n_clicks=True,
             style={
                 'padding': 'clamp(10px, 2vw, 20px)',
@@ -1768,13 +2100,14 @@ def create_final_layout(full_df_data: Optional[Dict], user_info: Dict[str, Any],
             }
         ),
         html.Div([
-            html.H3(t("ui.final.per_round_metrics", locale=locale), style={
+            html.H3(t("ui.final.per_round_metrics", locale=locale), id='final-per-round-title', style={
                 'textAlign': 'center',
                 'marginBottom': '15px',
                 'fontSize': 'clamp(18px, 3vw, 24px)'
             }),
             html.Div(
                 t("ui.ending.units_line", locale=locale, unit=unit),
+                id='final-units-line',
                 style={
                     'textAlign': 'center',
                     'marginBottom': '10px',
@@ -1824,6 +2157,7 @@ def create_final_layout(full_df_data: Optional[Dict], user_info: Dict[str, Any],
             [
                 html.H3(
                     t("ui.switch_format.title", locale=locale),
+                    id='final-switch-format-title',
                     style={'textAlign': 'center', 'marginBottom': '10px', 'fontSize': 'clamp(18px, 3vw, 24px)'},
                 ),
                 html.Div(id="switch-format-error", style={'marginBottom': '10px'}),
@@ -2392,22 +2726,20 @@ def handle_back_to_final_from_upload(n_clicks: Optional[int]) -> Tuple[str, Dict
      Output('glucose-chart-mode', 'data', allow_duplicate=True),
      Output('randomization-initialized', 'data', allow_duplicate=True),
      Output('glucose-unit', 'data', allow_duplicate=True),
-     Output('interface-language', 'data', allow_duplicate=True)],
+     Output('interface-language', 'data', allow_duplicate=True),
+     Output('last-visited-page', 'data', allow_duplicate=True)],
     [Input('restart-button', 'n_clicks')],
     prevent_initial_call=True
 )
-def handle_restart_button(n_clicks: Optional[int]) -> Tuple[str, None, Dict[str, bool], bool, str, str]:
+def handle_restart_button(n_clicks: Optional[int]) -> Tuple[str, None, Dict[str, bool], bool, str, str, None]:
     """Handle restart button - navigate to start and clear user info. Data reset handled elsewhere."""
     print(f"DEBUG handle_restart_button FIRED: n_clicks={n_clicks}")
     if n_clicks:
         with start_action(action_type=u"handle_restart_button") as action:
             action.log(message_type="restart_clicked")
-        # Reset chart mode to hide last hour when going back to prediction
         chart_mode = {'hide_last_hour': True}
-        # Reset randomization flag to trigger new random position
-        # Reset interface language to English when restarting the game
-        return '/', None, chart_mode, False, 'mg/dL', 'en'
-    return no_update, no_update, no_update, no_update, no_update, no_update
+        return '/', None, chart_mode, False, 'mg/dL', 'en', None
+    return no_update, no_update, no_update, no_update, no_update, no_update, no_update
 
 
 @app.callback(
@@ -2623,6 +2955,339 @@ app.clientside_callback(
      Input('consent-scroll-request', 'data')]
 )
 
+# --- --clean flag: wipe localStorage on first connect ---
+# The flag is set via env var by ``uv run start --clean``.  The clientside
+# callback runs once (memory-backed store) and clears all Dash-persisted
+# localStorage keys so the session starts fresh.  Subsequent tabs or reloads
+# against the same running server will also clean, which is the intended
+# behaviour: stop the server to stop cleaning.
+app.clientside_callback(
+    """
+    function(shouldClean) {
+        if (!shouldClean) { return false; }
+        try { window.localStorage.clear(); } catch (e) {}
+        return false;
+    }
+    """,
+    Output('clean-storage-flag', 'data', allow_duplicate=True),
+    [Input('clean-storage-flag', 'data')],
+    prevent_initial_call='initial_duplicate',
+)
+
+# --- Page-restore logic for STORAGE_TYPE=local ---
+#
+# Two responsibilities:
+#  1. *Persist* – write the current pathname into ``last-visited-page`` whenever
+#     the user navigates to a main-flow page.  Done client-side for speed.
+#     We skip the very first write if the pathname is ``/`` so the restore
+#     callback (below) has a chance to redirect before the persisted value is
+#     overwritten with ``/``.
+#  2. *Restore* – on the very first page load, if ``last-visited-page`` holds a
+#     non-landing value from a prior session (localStorage), redirect to that
+#     page provided enough session state exists to render it.
+#
+# Ordering guarantee: Dash hydrates ``dcc.Store(storage_type='local')`` from
+# the browser *after* the initial server-side render.  The hydration writes to
+# the store's ``data`` property, which fires any ``Input`` callbacks.  We use
+# ``prevent_initial_call=True`` on the restore callback so it only fires on
+# the *hydrated* value, never on the server-default ``None``.
+
+app.clientside_callback(
+    """
+    function(pathname) {
+        var restorable = ["/", "/startup", "/prediction", "/ending", "/final"];
+        if (restorable.indexOf(pathname) === -1) {
+            return [window.dash_clientside.no_update, window.dash_clientside.no_update];
+        }
+        // On the very first render the URL is always "/".  Skip persisting "/"
+        // so the restore callback can read the real stored value first.
+        if (!window._sugarPagePersistReady) {
+            window._sugarPagePersistReady = true;
+            if (pathname === "/") {
+                return [window.dash_clientside.no_update, window.dash_clientside.no_update];
+            }
+        }
+        // Mark session as active once the user navigates to any game page.
+        var active = (pathname !== "/") ? true : window.dash_clientside.no_update;
+        return [pathname, active];
+    }
+    """,
+    [Output('last-visited-page', 'data'),
+     Output('session-active', 'data', allow_duplicate=True)],
+    [Input('url', 'pathname')],
+    prevent_initial_call='initial_duplicate',
+)
+
+
+@app.callback(
+    [Output('resume-dialog-target', 'data'),
+     Output('page-restore-done', 'data'),
+     Output('url', 'pathname', allow_duplicate=True),
+     Output('session-active', 'data')],
+    [Input('last-visited-page', 'data'),
+     Input('user-info-store', 'data'),
+     Input('full-df', 'data')],
+    [State('page-restore-done', 'data'),
+     State('url', 'pathname'),
+     State('session-active', 'data')],
+    prevent_initial_call=True,
+)
+def restore_page_on_load(
+    last_page: Optional[str],
+    user_info: Optional[Dict[str, Any]],
+    full_df_data: Optional[Dict],
+    already_done: Optional[bool],
+    pathname: Optional[str],
+    session_active: Optional[bool],
+) -> Tuple[Optional[Dict[str, Any]], bool, str, bool]:
+    """Restore the user's last game page on load.
+
+    On a **fresh browser session** (``session-active`` is False in
+    sessionStorage): show the resume-or-start-over dialog so the user can
+    choose.
+
+    On a **tab-switch-back** (``session-active`` is True — the user already
+    interacted in this tab and just clicked a navbar link that caused a full
+    reload): silently redirect to the last game page without a dialog.
+
+    All three localStorage stores (last-visited-page, user-info-store, full-df)
+    are Inputs so the callback re-fires as each store hydrates.  The
+    ``page-restore-done`` memory flag prevents action after the first decision.
+    """
+    if already_done or _is_chart_mode:
+        raise PreventUpdate
+
+    if not last_page or last_page == "/":
+        return no_update, True, no_update, True
+
+    if pathname and pathname != "/":
+        return no_update, True, no_update, True
+
+    if last_page in ("/prediction", "/ending", "/final") and not user_info:
+        raise PreventUpdate
+
+    rounds_played = 0
+    current_round = 0
+    if user_info:
+        rounds_played = len(user_info.get('rounds') or [])
+        current_round = int(user_info.get('current_round_number') or (rounds_played + 1))
+
+    with start_action(action_type=u"restore_page_on_load", last_page=last_page, has_user_info=user_info is not None, session_active=bool(session_active)) as action:
+        target: Optional[str] = None
+
+        if last_page == "/startup":
+            target = "/startup"
+
+        elif last_page == "/prediction":
+            target = "/prediction" if user_info else "/startup"
+
+        elif last_page == "/ending":
+            has_prediction_data = bool(user_info and "prediction_table_data" in user_info)
+            if has_prediction_data and full_df_data:
+                target = "/ending"
+            elif user_info:
+                target = "/prediction"
+
+        elif last_page == "/final":
+            if user_info:
+                target = "/final"
+
+        if target is None:
+            action.log(message_type="no_restorable_target", last_page=last_page)
+            return no_update, True, no_update, True
+
+        if session_active:
+            action.log(message_type="tab_switch_redirect", target=target)
+            return no_update, True, target, True
+
+        action.log(message_type="showing_resume_dialog", target=target, current_round=current_round)
+        dialog_data = {
+            "target": target,
+            "current_round": current_round,
+            "max_rounds": MAX_ROUNDS,
+        }
+        return dialog_data, True, no_update, True
+
+
+# --- Resume dialog: render, continue, start-over ---
+
+@app.callback(
+    Output('resume-dialog-container', 'children'),
+    [Input('resume-dialog-target', 'data'),
+     Input('interface-language', 'data')],
+    prevent_initial_call=True,
+)
+def render_resume_dialog(
+    dialog_data: Optional[Dict[str, Any]],
+    interface_language: Optional[str],
+) -> List:
+    """Render the resume-or-start-over modal when a prior session is detected."""
+    if not dialog_data or not dialog_data.get("target"):
+        return []
+
+    locale = normalize_locale(interface_language)
+    current_round = dialog_data.get("current_round", 0)
+    max_rounds = dialog_data.get("max_rounds", MAX_ROUNDS)
+
+    if current_round > 0:
+        message = t("ui.resume_dialog.message", locale=locale, round=current_round, total=max_rounds)
+    else:
+        message = t("ui.resume_dialog.message_no_round", locale=locale)
+
+    overlay_style = {
+        'position': 'fixed',
+        'top': 0,
+        'left': 0,
+        'width': '100vw',
+        'height': '100vh',
+        'backgroundColor': 'rgba(0,0,0,0.55)',
+        'display': 'flex',
+        'alignItems': 'center',
+        'justifyContent': 'center',
+        'zIndex': 10000,
+    }
+    card_style = {
+        'backgroundColor': '#fff',
+        'borderRadius': '12px',
+        'padding': '36px 40px',
+        'maxWidth': '480px',
+        'width': '90vw',
+        'boxShadow': '0 8px 32px rgba(0,0,0,0.25)',
+        'textAlign': 'center',
+    }
+    title_style = {
+        'fontSize': '24px',
+        'fontWeight': 'bold',
+        'marginBottom': '16px',
+        'color': '#333',
+    }
+    message_style = {
+        'fontSize': '16px',
+        'lineHeight': '1.5',
+        'color': '#555',
+        'marginBottom': '28px',
+    }
+    buttons_style = {
+        'display': 'flex',
+        'gap': '16px',
+        'justifyContent': 'center',
+    }
+
+    warning_style = {
+        'fontSize': '13px',
+        'lineHeight': '1.4',
+        'color': '#b5600a',
+        'backgroundColor': '#fff8f0',
+        'border': '1px solid #f0c88a',
+        'borderRadius': '6px',
+        'padding': '10px 14px',
+        'marginBottom': '24px',
+        'textAlign': 'left',
+    }
+
+    return [html.Div([
+        html.Div([
+            html.Div(
+                t("ui.resume_dialog.title", locale=locale),
+                style=title_style,
+                disable_n_clicks=True,
+            ),
+            html.Div(message, style=message_style, disable_n_clicks=True),
+            html.Div(
+                t("ui.resume_dialog.warning", locale=locale),
+                style=warning_style,
+                disable_n_clicks=True,
+            ),
+            html.Div([
+                html.Button(
+                    t("ui.resume_dialog.start_over_btn", locale=locale),
+                    id='resume-start-over-btn',
+                    className='ui red button',
+                    style={'minWidth': '140px'},
+                ),
+                html.Button(
+                    t("ui.resume_dialog.continue_btn", locale=locale),
+                    id='resume-continue-btn',
+                    className='ui green button',
+                    style={'minWidth': '140px'},
+                ),
+            ], style=buttons_style, disable_n_clicks=True),
+        ], style=card_style, disable_n_clicks=True),
+    ], style=overlay_style, disable_n_clicks=True)]
+
+
+@app.callback(
+    [Output('url', 'pathname', allow_duplicate=True),
+     Output('resume-dialog-container', 'children', allow_duplicate=True),
+     Output('resume-dialog-target', 'data', allow_duplicate=True),
+     Output('session-active', 'data', allow_duplicate=True)],
+    [Input('resume-continue-btn', 'n_clicks')],
+    [State('resume-dialog-target', 'data')],
+    prevent_initial_call=True,
+)
+def handle_resume_continue(
+    n_clicks: Optional[int],
+    dialog_data: Optional[Dict[str, Any]],
+) -> Tuple[str, List, None, bool]:
+    """Navigate to the saved page when the user clicks Continue."""
+    if not n_clicks or not dialog_data:
+        raise PreventUpdate
+    target = dialog_data.get("target", "/")
+    with start_action(action_type=u"resume_continue", target=target) as action:
+        action.log(message_type="user_chose_continue")
+    return target, [], None, True
+
+
+@app.callback(
+    [Output('url', 'pathname', allow_duplicate=True),
+     Output('resume-dialog-container', 'children', allow_duplicate=True),
+     Output('resume-dialog-target', 'data', allow_duplicate=True),
+     Output('user-info-store', 'data', allow_duplicate=True),
+     Output('glucose-chart-mode', 'data', allow_duplicate=True),
+     Output('randomization-initialized', 'data', allow_duplicate=True),
+     Output('glucose-unit', 'data', allow_duplicate=True),
+     Output('interface-language', 'data', allow_duplicate=True),
+     Output('last-visited-page', 'data', allow_duplicate=True),
+     Output('full-df', 'data', allow_duplicate=True),
+     Output('current-window-df', 'data', allow_duplicate=True),
+     Output('events-df', 'data', allow_duplicate=True),
+     Output('is-example-data', 'data', allow_duplicate=True),
+     Output('data-source-name', 'data', allow_duplicate=True),
+     Output('initial-slider-value', 'data', allow_duplicate=True),
+     Output('clean-storage-flag', 'data', allow_duplicate=True),
+     Output('session-active', 'data', allow_duplicate=True)],
+    [Input('resume-start-over-btn', 'n_clicks')],
+    prevent_initial_call=True,
+)
+def handle_resume_start_over(
+    n_clicks: Optional[int],
+) -> tuple:
+    """Reset all in-memory stores and trigger the clean-storage-flag to wipe localStorage."""
+    if not n_clicks:
+        raise PreventUpdate
+    with start_action(action_type=u"resume_start_over") as action:
+        action.log(message_type="user_chose_start_over")
+    return (
+        "/",                       # url pathname
+        [],                        # resume-dialog-container
+        None,                      # resume-dialog-target
+        None,                      # user-info-store
+        {'hide_last_hour': True},  # glucose-chart-mode
+        False,                     # randomization-initialized
+        'mg/dL',                   # glucose-unit
+        'en',                      # interface-language
+        None,                      # last-visited-page
+        None,                      # full-df
+        None,                      # current-window-df
+        None,                      # events-df
+        True,                      # is-example-data
+        'example.csv',             # data-source-name
+        None,                      # initial-slider-value
+        True,                      # clean-storage-flag (self-resets via clientside callback)
+        True,                      # session-active (user made a choice in this tab)
+    )
+
+
 ## Removed URL-based data writer callback to enforce single-writer for data stores
 
 # Data initialization callback (URL-based only)
@@ -2652,38 +3317,44 @@ def initialize_data_on_url_change(
     bool,
     int,
 ]:
-    """Initialize data when URL changes or on first load"""
-    # Handle URL-driven initialization without requiring existing data
-    if pathname in ('/ending', '/final'):
-        return no_update, no_update, no_update, no_update, no_update, no_update, no_update
-    if pathname == '/prediction':
-        # For format B/C: require upload, don't auto-load example dataset (even if stores currently have example data).
-        fmt = str((user_info or {}).get("format") or "A")
-        uploaded_path = (user_info or {}).get("uploaded_data_path")
-        if fmt in ("B", "C") and not uploaded_path:
-            return None, None, None, False, "", False, 0
+    """Initialize data when URL changes to /prediction without existing data.
 
-        # If prediction page and data already present, preserve.
-        if full_df_data is not None:
-            return no_update, no_update, no_update, no_update, no_update, no_update, no_update
-    
-    # Initialize fresh example data (startup or first load)
+    Only loads fresh example data when navigating to /prediction and no data
+    exists yet.  All other pages are left alone so that persisted localStorage
+    stores are never overwritten (critical for the resume flow).
+    """
+    _no_change = (no_update, no_update, no_update, no_update, no_update, no_update, no_update)
+
+    if pathname != '/prediction':
+        return _no_change
+
+    # For format B/C: require upload, don't auto-load example dataset.
+    fmt = str((user_info or {}).get("format") or "A")
+    uploaded_path = (user_info or {}).get("uploaded_data_path")
+    if fmt in ("B", "C") and not uploaded_path:
+        return None, None, None, False, "", False, 0
+
+    # Data already present — preserve (handles resume and round transitions).
+    if full_df_data is not None:
+        return _no_change
+
+    # First visit to /prediction with no data: load fresh example data.
     full_df, events_df = load_glucose_data()
     df, random_start = get_random_data_window(full_df, DEFAULT_POINTS)
     full_df = full_df.with_columns(pl.lit(0.0).alias('prediction'))
     df = df.with_columns(pl.lit(0.0).alias('prediction'))
-    
+
     with start_action(action_type=u"initialize_data_on_url_change") as action:
         action.log(message_type="new_random_start", random_start=random_start)
-    
+
     return (
         convert_df_to_dict(full_df),
         convert_df_to_dict(df),
         convert_events_df_to_dict(events_df),
         True,
         'example.csv',
-        False,  # Keep randomization flag false so slider can be randomized
-        random_start  # Update the initial slider value
+        False,
+        random_start,
     )
 
 # Separate callback for file upload handling
@@ -3468,7 +4139,8 @@ def main(
     typer_ctx: typer.Context,
     debug: Optional[bool] = typer.Option(None, "--debug", help="Enable debug mode to show test button"),
     host: Optional[str] = typer.Option(None, "--host", help="Host to run the server on"),
-    port: Optional[int] = typer.Option(None, "--port", help="Port to run the server on")
+    port: Optional[int] = typer.Option(None, "--port", help="Port to run the server on"),
+    clean: bool = typer.Option(False, "--clean", help="Clear browser localStorage on first connect so the session starts fresh"),
 ) -> None:
     """Start the Dash server.
 
@@ -3478,6 +4150,13 @@ def main(
     """
     if typer_ctx.invoked_subcommand is not None:
         return
+
+    if clean:
+        os.environ["_CLEAN_STORAGE"] = "1"
+        for child in app.layout.children:
+            if getattr(child, 'id', None) == 'clean-storage-flag':
+                child.data = True
+                break
 
     dash_host = DASH_HOST if host is None else (host or DASH_HOST)
     dash_port = DASH_PORT if port is None else port
@@ -3492,7 +4171,8 @@ def main(
         action_type=u"start_dash_server",
         host=dash_host,
         port=dash_port,
-        debug=dash_debug
+        debug=dash_debug,
+        clean=clean
     ):
         app.run(host=dash_host, port=dash_port, debug=dash_debug)
 

@@ -1,3 +1,10 @@
+/* Force desktop-width layout on all viewports.
+   The <meta viewport width=1280> handles real mobile browsers;
+   min-width prevents CSS reflow below 1280px as a fallback. */
+html, body {
+  min-width: 1280px;
+}
+
 /* Remove default body margin and padding */
 body {
   margin: 0 !important;
@@ -10,64 +17,50 @@ body {
   padding-top: 0 !important;
 }
 
-.lang-picker {
-  display: flex;
-  gap: 8px;
-  justify-content: flex-end;
-  margin-bottom: 12px;
-  align-items: flex-start;
-}
-
-.lang-btn {
-  display: inline-flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: flex-start;
-  gap: 4px;
-  width: 42px;
-  padding: 4px 4px 6px 4px;
-  border-radius: 12px;
-  border: 1px solid rgba(15, 23, 42, 0.16);
-  background: transparent;
-  cursor: pointer;
-  box-shadow: none;
-}
-
-.lang-btn.active {
-  border: 1px solid rgba(29, 78, 216, 0.85);
-  box-shadow: 0 4px 10px rgba(29, 78, 216, 0.20);
-}
-
-.lang-flag {
+/* Language flag images inside the Fomantic menu */
+.ui.menu .lang-flag {
   width: 30px;
   height: 20px;
   object-fit: cover;
-  display: block;
+  display: inline-block;
   border-radius: 8px;
   border: 1px solid rgba(15, 23, 42, 0.12);
   background: #ffffff;
+  vertical-align: middle;
 }
 
-.lang-label {
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  color: #0f172a;
-  line-height: 1;
-  opacity: 0;
-  transform: translateY(-2px);
-  transition: opacity 120ms ease-in-out, transform 120ms ease-in-out;
-  pointer-events: none;
-}
-
-.lang-btn:hover .lang-label,
-.lang-btn.active .lang-label {
-  opacity: 1;
-  transform: translateY(0);
+/* Compact language items: don't auto-stretch, keep consistent padding */
+.ui.menu .right.menu > .lang-item.item {
+  flex: 0 0 auto;
+  padding-left: 0.8em !important;
+  padding-right: 0.8em !important;
 }
 
 body :not(h1):not(h2):not(h3):not(h4):not(h5):not(h6) {
   font-size: 16px !important;
+}
+
+/* Override the blanket 16px rule for Fomantic UI menus so size classes work */
+body .ui.massive.menu .item,
+body .ui.massive.menu {
+  font-size: 1.71428571rem !important;
+}
+body .ui.huge.menu .item,
+body .ui.huge.menu {
+  font-size: 1.42857143rem !important;
+}
+body .ui.large.menu .item,
+body .ui.large.menu {
+  font-size: 1.14285714rem !important;
+}
+
+/* Tabular inverted menu: active tab stands out, items evenly spaced */
+.ui.tabular.inverted.menu .item {
+  border-bottom: 3px solid transparent;
+}
+.ui.tabular.inverted.menu .active.item {
+  border-bottom: 3px solid white;
+  background: rgba(255, 255, 255, 0.12);
 }
 
 /* Custom green color for primary action buttons */
@@ -88,15 +81,6 @@ body :not(h1):not(h2):not(h3):not(h4):not(h5):not(h6) {
   background-color: #1565C0 !important;
 }
 
-/* Navbar buttons styling */
-#navbar-back-button, #navbar-home-button, #navbar-about-button, #navbar-contact-button, #navbar-demo-button {
-  background-color: white !important;
-  color: black !important;
-}
-
-#navbar-back-button:hover, #navbar-home-button:hover, #navbar-about-button:hover, #navbar-contact-button:hover, #navbar-demo-button:hover {
-  background-color: #e0e0e0 !important;
-}
 
 /* Make checkboxes outlined in black on the landing page */
 #landing-page .form-check-input {
@@ -191,6 +175,14 @@ body :not(h1):not(h2):not(h3):not(h4):not(h5):not(h6) {
   margin: 16px auto;
   border-radius: 8px;
   border: 1px solid rgba(15, 23, 42, 0.10);
+}
+
+/* Suppress Dash's default "Loading..." text and white flash during callback
+   updates to page-content / navbar-container.  Dash inserts a ._dash-loading
+   element that replaces the previous children while the new callback response
+   is in flight — hiding it keeps the old content visible for a seamless feel. */
+._dash-loading {
+  display: none !important;
 }
 
 /* H3 subtitle styling for consent notice (match required consent title style) */

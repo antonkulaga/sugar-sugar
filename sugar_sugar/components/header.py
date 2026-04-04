@@ -3,6 +3,7 @@ from typing import Sequence, Optional, Any
 from dash import dcc, html
 from dash.html import Div
 
+from sugar_sugar.config import STORAGE_TYPE
 from sugar_sugar.i18n import t
 
 
@@ -49,6 +50,7 @@ class HeaderComponent(Div):
             [
                 html.Label(
                     t("ui.header.time_window_label", locale=self._locale),
+                    id='header-time-window-label',
                     style={"marginRight": "10px"},
                 ),
                 dcc.Slider(
@@ -61,6 +63,8 @@ class HeaderComponent(Div):
                     updatemode="mouseup",
                     included=True,
                     step=1,
+                    persistence=True,
+                    persistence_type=STORAGE_TYPE,
                 ),
             ],
             style={
@@ -76,7 +80,7 @@ class HeaderComponent(Div):
         children: list[Any] = [
             dcc.Upload(
                 id='upload-data',
-                children=html.Div([
+                children=html.Div(id='header-upload-prompt', children=[
                     t("ui.header.upload_prompt_1", locale=self._locale),
                     html.A(t("ui.header.upload_prompt_2", locale=self._locale))
                 ]),
@@ -96,8 +100,8 @@ class HeaderComponent(Div):
         if self.show_example_button:
             children.append(
                 html.Button(
-                    t("ui.header.use_example_data", locale=self._locale),
                     id='use-example-data-button',
+                    children=t("ui.header.use_example_data", locale=self._locale),
                     style={
                         'width': '100%',
                         'height': '40px',
@@ -134,6 +138,7 @@ class HeaderComponent(Div):
                             [
                                 html.Label(
                                     t("ui.header.current_data_source", locale=self._locale),
+                                    id='header-data-source-label',
                                     style={
                                         'fontWeight': 'bold',
                                         'marginRight': '8px',
@@ -194,6 +199,7 @@ class HeaderComponent(Div):
 
         return [
             html.H1(t("ui.common.app_title", locale=self._locale),
+                    id='header-app-title',
                     style={
                         'textAlign': 'center',
                         'color': '#2c5282',
@@ -204,7 +210,7 @@ class HeaderComponent(Div):
             html.Div([
                 # Left column - Game description and instructions
                 html.Div([
-                    html.P([
+                    html.P(id='header-description', children=[
                         t("ui.header.description_1", locale=self._locale) + " ",
                         html.Br(),
                         t("ui.header.description_2", locale=self._locale) + " ",
@@ -215,7 +221,7 @@ class HeaderComponent(Div):
                         'lineHeight': '1.5',
                         'marginBottom': '15px'
                     }),
-                    html.P([
+                    html.P(id='header-how-to-play', children=[
                         html.Strong(t("ui.header.how_to_play", locale=self._locale)),
                         html.Br(),
                         t("ui.header.how_to_play_1", locale=self._locale),

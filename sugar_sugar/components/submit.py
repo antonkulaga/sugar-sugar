@@ -6,7 +6,7 @@ from datetime import datetime
 import uuid
 import csv
 from pathlib import Path
-from sugar_sugar.config import PREDICTION_HOUR_OFFSET
+from sugar_sugar.config import PREDICTION_HOUR_OFFSET, STORAGE_TYPE
 from sugar_sugar.components.metrics import MetricsComponent
 from sugar_sugar.i18n import t, normalize_locale
 
@@ -70,7 +70,7 @@ class SubmitComponent(html.Div):
                     'height': '50px'
                 }
             ),
-            dcc.Store(id='prediction-stats-store', data=None)
+            dcc.Store(id='prediction-stats-store', data=None, storage_type=STORAGE_TYPE)
         ], style={'display': 'flex', 'flexDirection': 'column', 'justifyContent': 'center', 'alignItems': 'center'})
 
     def _repair_misaligned_csv_rows(self) -> None:

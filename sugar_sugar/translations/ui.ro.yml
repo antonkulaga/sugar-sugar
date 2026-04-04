@@ -6,12 +6,11 @@ ro:
     go_to_start: "Mergi la pagina de start"
     loading: "Se încarcă..."
     continue: "Continuă"
-    back: "Înapoi"
-    home: "Acasă"
+    game: "Joc"
     finish_exit: "Finalizează / Ieși"
-    about: "Despre"
+    the_study: "Studiul"
     contact_us: "Contact"
-    demo: "Demo"
+    video_instructions: "Instrucțiuni video"
 
   language:
     choose: "Limbă"
@@ -50,6 +49,9 @@ ro:
     title: "Despre Sugar Sugar"
     body: "Sugar Sugar este un instrument de cercetare creat pentru a măsura cât de precis pot oamenii să prevadă tendințele viitoare ale glucozei. Participarea ta ne ajută să înțelegem intuiția umană și să îmbunătățim modelele de predicție."
     study_design_title: "Designul studiului"
+    download_pdf_label: "Descarcă designul studiului (PDF)"
+    pdf_original_english_note: "(originalul în engleză)"
+    translation_note: "Textul de mai jos este o traducere. Designul original al studiului în engleză este disponibil ca PDF mai sus."
     github_link_label: "Proiectul pe GitHub"
 
   contact:
@@ -154,7 +156,7 @@ ro:
     how_to_play: "Cum se joacă:"
     how_to_play_1: "1. Fă clic și trage pe grafic pentru a adăuga predicții"
     how_to_play_2: "2. Desenează linii una după alta pentru a crea curbe de predicție"
-    how_to_play_3: "3. Încearcă să prezici cel puțin 5 puncte pentru a vedea metricele de acuratețe"
+    how_to_play_3: "3. Desenează predicția până la capătul zonei ascunse pentru a trimite"
 
   prediction:
     units_label: "Unități:"
@@ -188,7 +190,7 @@ ro:
   metrics:
     title: "Metrici"
     prediction_accuracy: "Acuratețea predicției"
-    placeholder_need_5: "Adaugă cel puțin 5 puncte de predicție pentru a vedea metricele de acuratețe"
+    placeholder_need_5: "Desenează predicții pe grafic pentru a vedea metricele de acuratețe"
     title_accuracy_metrics: "Metrici de acuratețe"
     no_metrics_available: "Nu sunt disponibile metrici"
     desc:
@@ -204,6 +206,14 @@ ro:
     absolute_error: "Eroare absolută"
     relative_error_pct: "Eroare relativă (%{pct})"
 
+  resume_dialog:
+    title: "Bine ai revenit!"
+    message: "Ai o sesiune anterioară salvată (runda %{round} din %{total}). Dorești să continui de unde ai rămas sau să reîncepi?"
+    message_no_round: "Ai o sesiune anterioară salvată. Dorești să continui de unde ai rămas sau să reîncepi?"
+    warning: "Te rugăm să nu reîncepi doar pentru că nu ești mulțumit de predicțiile tale — repornirea denaturează datele de cercetare și afectează rezultatele studiului."
+    continue_btn: "Continuă"
+    start_over_btn: "Reîncepe"
+
   session_expired:
     title: "Sesiune expirată"
     text: "Te rugăm să reîncepi de la început."
@@ -215,6 +225,9 @@ ro:
     next_round: "Runda următoare"
     view_complete_analysis: "Vezi analiza completă"
     graph_explanation: "Graficul arată fereastra de glucoză pe care ai prezis-o. Linia portocalie punctată separă istoricul cunoscut (stânga) de ora pe care ai prezis-o (dreapta). Predicțiile tale sunt afișate cu roșu."
+    data_source_label: "Sursa datelor: %{source}"
+    round_motivation: "Poți opri oricând, dar completarea tuturor celor %{total} runde oferă cele mai bune date. Cel puțin %{min_useful} runde sunt necesare pentru rezultate utile — fiecare rundă suplimentară ajută!"
+    local_storage_note: "Progresul tău este salvat local în acest browser. Poți lua o pauză și relua mai târziu folosind același browser."
 
   final:
     title: "Analiză completă"
@@ -234,7 +247,7 @@ ro:
     not_eligible_no_cgm: "B/C sunt disponibile doar dacă ai spus că ai date CGM."
 
   results_disclaimer:
-    line1: "Aceste scoruri măsoară performanța predicției, nu starea de sănătate"
-    line2: "Nu le folosi pentru a ajusta insulina, dieta sau alte decizii medicale"
-    line3: "Continuă să urmezi recomandările furnizorului tău de servicii medicale"
+    line1: "Aceste rezultate sunt exclusiv în scop de cercetare"
+    line2: "Indiferent de rezultate, nu schimba nicio decizie medicală pe baza acestei aplicații"
+    line3: "Urmează întotdeauna recomandările furnizorului tău de servicii medicale"
 

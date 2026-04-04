@@ -1,11 +1,16 @@
-from typing import Optional
-from dash import html, dcc, Input, Output, State
-import dash_bootstrap_components as dbc
+from dash import html
 from sugar_sugar.i18n import t
 
 
+_GAME_PAGES = frozenset({"/", "/consent-form", "/startup", "/prediction", "/ending", "/final"})
+
+
 class NavBar(html.Div):
-    """Navigation bar component that appears at the top of all pages."""
+    """Fomantic UI massive blue inverted tabular menu navbar.
+
+    Left items:  Game | The Study | Video instructions | Contact us
+    Right items: language flags
+    """
 
     def __init__(self, *, locale: str = "en", current_page: str = "/") -> None:
         self._locale: str = locale
@@ -13,95 +18,70 @@ class NavBar(html.Div):
 
         super().__init__(
             children=self._create_navbar(),
-            style={
-                "backgroundColor": "#1e88e5",
-                "padding": "12px 20px",
-                "boxShadow": "0 2px 4px rgba(0,0,0,0.1)",
-                "display": "flex",
-                "alignItems": "center",
-                "justifyContent": "flex-start",
-                "marginBottom": "20px",
-            },
+            className="ui massive blue inverted tabular menu",
+            style={"borderRadius": "0", "marginBottom": "0", "borderBottom": "none"},
+            disable_n_clicks=True,
         )
+
+    def _active_cls(self, *pages: str) -> str:
+        """Return 'active item' if current page matches, else 'item'."""
+        return "active item" if self._current_page in pages else "item"
 
     def _create_navbar(self) -> list:
-        """Create the navbar content."""
-        back_href = get_navbar_back_href(self._current_page)
-        
-        back_button = html.A(
-            "← " + t("ui.common.back", locale=self._locale),
-            id="navbar-back-button",
-            href=back_href,
-            className="ui small basic button",
-            style={
-                "fontWeight": "600",
-                "fontSize": "14px",
-            },
+        left_items: list = [
+            html.A(
+                t("ui.common.game", locale=self._locale),
+                href="/",
+                className=self._active_cls(*_GAME_PAGES),
+                disable_n_clicks=True,
+            ),
+            html.A(
+                t("ui.common.the_study", locale=self._locale),
+                href="/about",
+                className=self._active_cls("/about"),
+                disable_n_clicks=True,
+            ),
+            html.A(
+                t("ui.common.video_instructions", locale=self._locale),
+                href="/demo",
+                className=self._active_cls("/demo"),
+                disable_n_clicks=True,
+            ),
+            html.A(
+                t("ui.common.contact_us", locale=self._locale),
+                href="/contact",
+                className=self._active_cls("/contact"),
+                disable_n_clicks=True,
+            ),
+        ]
+
+        right_menu = html.Div(
+            self._language_flags(),
+            className="right menu",
+            disable_n_clicks=True,
         )
 
-        home_button = html.A(
-            t("ui.common.home", locale=self._locale),
-            id="navbar-home-button",
-            href="/",
-            className="ui small basic button",
-            style={
-                "fontWeight": "600",
-                "fontSize": "14px",
-                "marginLeft": "8px",
-            },
-        )
+        return left_items + [right_menu]
 
-        about_button = html.A(
-            t("ui.common.about", locale=self._locale),
-            id="navbar-about-button",
-            href="/about",
-            className="ui small basic button",
-            style={
-                "fontWeight": "600",
-                "fontSize": "14px",
-                "marginLeft": "8px",
-            },
-        )
-
-        contact_button = html.A(
-            t("ui.common.contact_us", locale=self._locale),
-            id="navbar-contact-button",
-            href="/contact",
-            className="ui small basic button",
-            style={
-                "fontWeight": "600",
-                "fontSize": "14px",
-                "marginLeft": "8px",
-            },
-        )
-
-        demo_button = html.A(
-            t("ui.common.demo", locale=self._locale),
-            id="navbar-demo-button",
-            href="/demo",
-            className="ui small basic button",
-            style={
-                "fontWeight": "600",
-                "fontSize": "14px",
-                "marginLeft": "8px",
-            },
-        )
-
-        return [back_button, home_button, about_button, contact_button, demo_button]
-
-
-def get_navbar_back_href(pathname: Optional[str]) -> str:
-    """Determine where the back button should navigate to based on current page."""
-    if not pathname:
-        pathname = "/"
-
-    # Navigation mapping: from page -> back to page
-    back_map = {
-        "/consent-form": "/",
-        "/startup": "/",
-        "/prediction": "/startup",
-        "/ending": "/prediction",
-        "/final": "/ending",
-    }
-
-    return back_map.get(pathname, "/")
+    def _language_flags(self) -> list:
+        langs = [
+            ("en", "/assets/flags/gb.svg", "EN"),
+            ("de", "/assets/flags/de.svg", "DE"),
+            ("uk", "/assets/flags/ua.svg", "UA"),
+            ("ro", "/assets/flags/ro.svg", "RO"),
+        ]
+        items: list = []
+        for code, flag_src, label in langs:
+            cls = "active item lang-item" if self._locale == code else "item lang-item"
+            items.append(
+                html.A(
+                    [
+                        html.Img(src=flag_src, className="lang-flag", disable_n_clicks=True),
+                        html.Span(f" {label}", style={"marginLeft": "4px"}, disable_n_clicks=True),
+                    ],
+                    id=f"lang-{code}",
+                    className=cls,
+                    style={"cursor": "pointer"},
+                )
+            )
+        return items

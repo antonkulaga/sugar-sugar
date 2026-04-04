@@ -5,6 +5,7 @@ import dash
 from typing import Any, Optional
 # DEBUG_MODE will be imported dynamically to get the latest value
 from sugar_sugar.i18n import t
+from sugar_sugar.config import STORAGE_TYPE
 
 
 
@@ -79,7 +80,7 @@ class StartupPage(html.Div):
                         type='email',
                         placeholder=t("ui.startup.email_placeholder", locale=locale),
                         persistence=True,
-                        persistence_type='session',
+                        persistence_type=STORAGE_TYPE,
                         style={'width': '100%', 'padding': '10px', 'fontSize': '20px', 'marginBottom': '20px'}
                     ),
                     
@@ -94,7 +95,7 @@ class StartupPage(html.Div):
                         min=0,
                         max=120,
                         persistence=True,
-                        persistence_type='session',
+                        persistence_type=STORAGE_TYPE,
                         style={'width': '100%', 'padding': '10px', 'fontSize': '20px', 'marginBottom': '20px'}
                     ),
                     html.Div(
@@ -116,7 +117,7 @@ class StartupPage(html.Div):
                         ],
                         placeholder=t("ui.startup.gender_placeholder", locale=locale),
                         persistence=True,
-                        persistence_type='session',
+                        persistence_type=STORAGE_TYPE,
                         style={'fontSize': '20px', 'marginBottom': '20px'}
                     ),
 
@@ -129,7 +130,7 @@ class StartupPage(html.Div):
                         ],
                         placeholder=t("ui.startup.cgm_placeholder", locale=locale),
                         persistence=True,
-                        persistence_type='session',
+                        persistence_type=STORAGE_TYPE,
                         style={'fontSize': '20px', 'marginBottom': '20px'}
                     ),
 
@@ -142,7 +143,7 @@ class StartupPage(html.Div):
                             min=0,
                             max=100,
                             persistence=True,
-                            persistence_type='session',
+                            persistence_type=STORAGE_TYPE,
                             style={'width': '100%', 'padding': '10px', 'fontSize': '20px', 'marginBottom': '20px'}
                         )
                     ]),
@@ -161,7 +162,7 @@ class StartupPage(html.Div):
                             ],
                             placeholder=t("ui.startup.format_placeholder", locale=locale),
                             persistence=True,
-                            persistence_type='session',
+                            persistence_type=STORAGE_TYPE,
                             style={'fontSize': '20px', 'marginBottom': '10px'}
                         ),
                         html.Div(
@@ -182,7 +183,7 @@ class StartupPage(html.Div):
                                     options=[{'label': t("ui.startup.data_usage_consent_label", locale=locale), 'value': 'agree'}],
                                     value=[],
                                     persistence=True,
-                                    persistence_type='session',
+                                    persistence_type=STORAGE_TYPE,
                                     style={'fontSize': '16px'}
                                 ),
                                 html.Div(id='data-usage-error', style={'marginTop': '8px', 'color': '#d32f2f', 'fontSize': '16px'})
@@ -203,7 +204,7 @@ class StartupPage(html.Div):
                         ],
                         placeholder=t("ui.startup.diabetic_placeholder", locale=locale),
                         persistence=True,
-                        persistence_type='session',
+                        persistence_type=STORAGE_TYPE,
                         style={'fontSize': '20px', 'marginBottom': '20px'}
                     ),
                     
@@ -223,7 +224,7 @@ class StartupPage(html.Div):
                             ],
                             placeholder=t("ui.startup.diabetes_type_placeholder", locale=locale),
                             persistence=True,
-                            persistence_type='session',
+                            persistence_type=STORAGE_TYPE,
                             style={'fontSize': '20px', 'marginBottom': '20px'}
                         ),
                         
@@ -238,7 +239,7 @@ class StartupPage(html.Div):
                             min=0,
                             max=100,
                             persistence=True,
-                            persistence_type='session',
+                            persistence_type=STORAGE_TYPE,
                             style={'width': '100%', 'padding': '10px', 'fontSize': '20px', 'marginBottom': '20px'}
                         )
                     ]),
@@ -252,7 +253,7 @@ class StartupPage(html.Div):
                         type='text',
                         placeholder=t("ui.startup.location_placeholder", locale=locale),
                         persistence=True,
-                        persistence_type='session',
+                        persistence_type=STORAGE_TYPE,
                         style={'width': '100%', 'padding': '10px', 'fontSize': '20px', 'marginBottom': '20px'}
                     ),
                     
