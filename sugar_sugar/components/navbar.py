@@ -42,6 +42,12 @@ class NavBar(html.Div):
                 disable_n_clicks=True,
             ),
             html.A(
+                t("ui.common.faq", locale=self._locale),
+                href="/faq",
+                className=self._active_cls("/faq"),
+                disable_n_clicks=True,
+            ),
+            html.A(
                 t("ui.common.video_instructions", locale=self._locale),
                 href="/demo",
                 className=self._active_cls("/demo"),
@@ -69,6 +75,10 @@ class NavBar(html.Div):
             ("de", "/assets/flags/de.svg", "DE"),
             ("uk", "/assets/flags/ua.svg", "UA"),
             ("ro", "/assets/flags/ro.svg", "RO"),
+            ("ru", "/assets/flags/ru.svg", "RU"),
+            ("zh", "/assets/flags/cn.svg", "ZH"),
+            ("fr", "/assets/flags/fr.svg", "FR"),
+            ("es", "/assets/flags/es.svg", "ES"),
         ]
         items: list = []
         for code, flag_src, label in langs:

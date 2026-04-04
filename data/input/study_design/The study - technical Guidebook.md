@@ -73,7 +73,7 @@ Group comparison of per-person MAE/RMSE between PwD and non-DM; comparison of hu
 
 **Ethics and Dissemination:** 
 
-Submitted to Ethikkommission, Universitätsmedizin Rostock. Non-interventional study using historical data only. Results to be published in peer-reviewed journals.
+Received clearance from Ethikkommission, Universitätsmedizin Rostock. Non-interventional study using historical data only. Results to be published in peer-reviewed journals.
 
 ---
 
@@ -386,7 +386,7 @@ Segments are selected to provide a balanced mix of different times of day, gluco
 
 **Data Upload Process:**
 
-1. Upload CGM export file (CSV or JSON format from supported devices)  
+1. Upload CGM export file (CSV or JSON format from supported devices, or Nightscout export)  
 2. Automated quality checks (minimum 5 consecutive days, data validation)  
 3. Data processing in which we convert from the supported device format to the uniform format we use for data output.  
 4. Data pseudonymization and secure storage

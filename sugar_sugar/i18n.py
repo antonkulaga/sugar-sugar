@@ -7,7 +7,7 @@ from typing import Final, Iterable, Optional
 import i18n
 
 DEFAULT_LOCALE: Final[str] = "en"
-SUPPORTED_LOCALES: Final[set[str]] = {"en", "de", "uk", "ro"}
+SUPPORTED_LOCALES: Final[set[str]] = {"en", "de", "uk", "ro", "ru", "zh", "fr", "es"}
 
 
 def normalize_locale(locale: Optional[str]) -> str:
@@ -46,6 +46,11 @@ def setup_i18n(*, extra_load_paths: Optional[Iterable[Path]] = None) -> None:
 
 def t(key: str, *, locale: Optional[str] = None, **kwargs: object) -> str:
     return str(i18n.t(key, locale=normalize_locale(locale), **kwargs))
+
+
+def t_raw(key: str, *, locale: Optional[str] = None, **kwargs: object) -> object:
+    """Return the raw translated value without coercing to str (for lists/dicts)."""
+    return i18n.t(key, locale=normalize_locale(locale), **kwargs)
 
 
 def t_list(key: str, *, locale: Optional[str] = None, **kwargs: object) -> list[str]:

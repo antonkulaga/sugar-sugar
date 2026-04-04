@@ -50,7 +50,7 @@ Sie können jederzeit, auch ohne Angabe von Gründen, Ihre Teilnahme an der Stud
 
 Wir weisen Sie darauf hin, dass für dieses Projekt und für die begleitende Studie keine eigene Versicherung abgeschlossen wurde, da es sich um eine reine Online-Studie ohne medizinische Maßnahmen und somit mit minimalem Risiko handelt.
 
-Die Studie wurde der zuständigen Ethikkommission vorgelegt. Sie hat keine Einwände erhoben.
+Die Studie hat ein positives Votum der zuständigen Ethikkommission erhalten.
 
 # **Datenschutz**
 
@@ -179,6 +179,6 @@ Ich willige hiermit unter Einbezug der dazugehörigen Teilnehmerinformation in d
 
 *itteilungen von HEALES oder verwandten Projekten werden nach Studienabschluss auf einer separaten Seite präsentiert und sind vollständig unabhängig von der Studienteilnahme und Einwilligung.*
 
-*Diese Studie wurde der Ethikkommission der Universitätsmedizin Rostock vorgelegt. Ref. number A 2026-0064. Eingegangen bei der Ethikkommission: 27. Februar 2026.*
+*Diese Studie hat ein positives Votum der Ethikkommission der Universitätsmedizin Rostock erhalten. Ref. number A 2026-0064. Eingegangen bei der Ethikkommission: 27. Februar 2026.*
 
 *Fragen oder Widerrufsanfragen: anton.kulaga@uni-rostock.de | livia.zaharia@uni-rostock.de*

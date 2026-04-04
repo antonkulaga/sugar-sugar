@@ -40,7 +40,7 @@ logs_dir.mkdir(exist_ok=True)
 to_nice_stdout()
 to_nice_file(logs_dir / 'sugar_sugar.json', logs_dir / 'sugar_sugar.log')
 
-from sugar_sugar.i18n import setup_i18n, normalize_locale, t
+from sugar_sugar.i18n import setup_i18n, normalize_locale, t, t_raw
 setup_i18n()
 
 from sugar_sugar.data import load_glucose_data
@@ -387,7 +387,11 @@ def reset_glucose_unit_on_start_page(pathname: Optional[str]) -> str:
     [Input('lang-en', 'n_clicks'),
      Input('lang-de', 'n_clicks'),
      Input('lang-uk', 'n_clicks'),
-     Input('lang-ro', 'n_clicks')],
+     Input('lang-ro', 'n_clicks'),
+     Input('lang-ru', 'n_clicks'),
+     Input('lang-zh', 'n_clicks'),
+     Input('lang-fr', 'n_clicks'),
+     Input('lang-es', 'n_clicks')],
     [State('interface-language', 'data')],
     prevent_initial_call=True
 )
@@ -396,17 +400,27 @@ def set_interface_language(
     n_de: Optional[int],
     n_uk: Optional[int],
     n_ro: Optional[int],
+    n_ru: Optional[int],
+    n_zh: Optional[int],
+    n_fr: Optional[int],
+    n_es: Optional[int],
     current_language: Optional[str],
 ) -> str:
     """Set the interface language from navbar flag buttons."""
     triggered = ctx.triggered_id
     if not triggered:
         raise PreventUpdate
-    click_value = {'lang-en': n_en, 'lang-de': n_de, 'lang-uk': n_uk, 'lang-ro': n_ro}.get(triggered)
-    if not click_value:
+    _clicks = {
+        'lang-en': n_en, 'lang-de': n_de, 'lang-uk': n_uk, 'lang-ro': n_ro,
+        'lang-ru': n_ru, 'lang-zh': n_zh, 'lang-fr': n_fr, 'lang-es': n_es,
+    }
+    if not _clicks.get(triggered):
         raise PreventUpdate
-    lang_map = {'lang-en': 'en', 'lang-de': 'de', 'lang-uk': 'uk', 'lang-ro': 'ro'}
-    new_lang = lang_map.get(triggered)
+    _lang_map = {
+        'lang-en': 'en', 'lang-de': 'de', 'lang-uk': 'uk', 'lang-ro': 'ro',
+        'lang-ru': 'ru', 'lang-zh': 'zh', 'lang-fr': 'fr', 'lang-es': 'es',
+    }
+    new_lang = _lang_map.get(triggered)
     if not new_lang or new_lang == current_language:
         raise PreventUpdate
     return new_lang
@@ -515,6 +529,8 @@ def update_on_language_change(
         return create_contact_page(locale=locale), warning_content, navbar
     if pathname == '/demo':
         return create_demo_page(locale=locale), warning_content, navbar
+    if pathname == '/faq':
+        return create_faq_page(locale=locale), warning_content, navbar
     # Landing page
     return LandingPage(locale=locale), warning_content, navbar
 
@@ -768,16 +784,67 @@ def display_page(
             return create_contact_page(locale=locale), warning_content, navbar
         if pathname == '/demo':
             return create_demo_page(locale=locale), warning_content, navbar
+        if pathname == '/faq':
+            return create_faq_page(locale=locale), warning_content, navbar
         # Default route: landing page
         return (LandingPage(locale=locale), warning_content, navbar)
 
 from dash import html
+
 
 def create_info_page(*, locale: str, title: str, body: str) -> html.Div:
     return html.Div(
         [
             html.H1(title, disable_n_clicks=True),
             html.Div(body, style={"marginBottom": "14px"}, disable_n_clicks=True),
+        ],
+        className="info-page",
+        disable_n_clicks=True,
+    )
+
+
+def create_faq_page(*, locale: str) -> html.Div:
+    sections: list[Any] = t_raw("ui.faq.sections", locale=locale)
+    section_divs: list[Any] = []
+    for section in sections:
+        items: list[Any] = []
+        for item in section.get("items", []):
+            items.append(
+                html.Div(
+                    [
+                        html.H3(
+                            item["q"],
+                            style={"marginBottom": "6px"},
+                            disable_n_clicks=True,
+                        ),
+                        dcc.Markdown(
+                            item["a"],
+                            link_target="_blank",
+                            style={"marginBottom": "0"},
+                        ),
+                    ],
+                    className="ui segment",
+                    style={"marginBottom": "8px"},
+                    disable_n_clicks=True,
+                )
+            )
+        section_divs.append(
+            html.Div(
+                [
+                    html.H2(
+                        section["title"],
+                        style={"marginBottom": "12px", "marginTop": "24px"},
+                        disable_n_clicks=True,
+                    ),
+                    html.Div(items, disable_n_clicks=True),
+                ],
+                disable_n_clicks=True,
+            )
+        )
+    return html.Div(
+        [
+            html.H1(t("ui.faq.title", locale=locale), disable_n_clicks=True),
+            html.Div(section_divs, disable_n_clicks=True),
         ],
         className="info-page",
         disable_n_clicks=True,
@@ -4178,7 +4245,7 @@ def main(
 
 @cli.command()
 def chart(
-    file: Optional[Path] = typer.Option(None, "--file", "-f", help="CSV file to load (Dexcom/Libre/Medtronic). Default: built-in example."),
+    file: Optional[Path] = typer.Option(None, "--file", "-f", help="CSV file to load (Dexcom/Libre/Medtronic/Nightscout). Default: built-in example."),
     points: int = typer.Option(DEFAULT_POINTS, "--points", "-p", help="Number of data points in the window"),
     start: Optional[int] = typer.Option(None, "--start", "-s", help="Start index for the data window (default: random)"),
     unit: str = typer.Option("mg/dL", "--unit", "-u", help="Glucose unit: mg/dL or mmol/L"),
