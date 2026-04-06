@@ -33,7 +33,7 @@ class GlucoseChart(html.Div):
                 id=f"{id}-graph",
                 figure=self._create_empty_figure(),
                 config={
-                    'displayModeBar': True,
+                    'displayModeBar': False,
                     'scrollZoom': False,
                     'doubleClick': 'reset',
                     'showAxisDragHandles': False,

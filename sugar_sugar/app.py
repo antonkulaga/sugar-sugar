@@ -1597,7 +1597,7 @@ def create_ending_layout(
                         prediction_boundary=len(df) - PREDICTION_HOUR_OFFSET,
                     ),
                     config={
-                        'displayModeBar': True,
+                        'displayModeBar': False,
                         'scrollZoom': False,
                         'doubleClick': 'reset',
                         'showAxisDragHandles': False,
