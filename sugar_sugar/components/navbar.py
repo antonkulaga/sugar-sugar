@@ -4,12 +4,23 @@ from sugar_sugar.i18n import t
 
 _GAME_PAGES = frozenset({"/", "/consent-form", "/startup", "/prediction", "/ending", "/final"})
 
+LANGUAGES: list[tuple[str, str, str]] = [
+    ("en", "/assets/flags/gb.svg", "EN"),
+    ("de", "/assets/flags/de.svg", "DE"),
+    ("uk", "/assets/flags/ua.svg", "UA"),
+    ("ro", "/assets/flags/ro.svg", "RO"),
+    ("ru", "/assets/flags/ru.svg", "RU"),
+    ("zh", "/assets/flags/cn.svg", "ZH"),
+    ("fr", "/assets/flags/fr.svg", "FR"),
+    ("es", "/assets/flags/es.svg", "ES"),
+]
+
 
 class NavBar(html.Div):
     """Fomantic UI massive blue inverted tabular menu navbar.
 
     Left items:  Game | The Study | Video instructions | Contact us
-    Right items: language flags
+    Right items: language dropdown (active flag + dropdown with all languages)
 
     Uses ``dcc.Link`` for navigation so page switches happen via client-side
     routing (``pushState``) without a full page reload.  This preserves all
@@ -63,36 +74,51 @@ class NavBar(html.Div):
         ]
 
         right_menu = html.Div(
-            self._language_flags(),
+            [self._language_dropdown()],
             className="right menu",
             disable_n_clicks=True,
         )
 
         return left_items + [right_menu]
 
-    def _language_flags(self) -> list:
-        langs = [
-            ("en", "/assets/flags/gb.svg", "EN"),
-            ("de", "/assets/flags/de.svg", "DE"),
-            ("uk", "/assets/flags/ua.svg", "UA"),
-            ("ro", "/assets/flags/ro.svg", "RO"),
-            ("ru", "/assets/flags/ru.svg", "RU"),
-            ("zh", "/assets/flags/cn.svg", "ZH"),
-            ("fr", "/assets/flags/fr.svg", "FR"),
-            ("es", "/assets/flags/es.svg", "ES"),
-        ]
-        items: list = []
-        for code, flag_src, label in langs:
-            cls = "active item lang-item" if self._locale == code else "item lang-item"
-            items.append(
+    def _language_dropdown(self) -> html.Div:
+        """Fomantic 'simple dropdown' showing the active language flag as the
+        trigger and all languages in a hover menu.  Each dropdown item keeps
+        its ``id="lang-{code}"`` so the existing ``set_interface_language``
+        callback works unchanged."""
+        current = next((lang for lang in LANGUAGES if lang[0] == self._locale), LANGUAGES[0])
+
+        dropdown_items: list = []
+        for code, flag_src, label in LANGUAGES:
+            active_cls = " active" if code == self._locale else ""
+            dropdown_items.append(
                 html.A(
                     [
                         html.Img(src=flag_src, className="lang-flag", disable_n_clicks=True),
-                        html.Span(f" {label}", style={"marginLeft": "4px"}, disable_n_clicks=True),
+                        html.Span(f" {label}", style={"marginLeft": "6px"}, disable_n_clicks=True),
                     ],
                     id=f"lang-{code}",
-                    className=cls,
+                    className=f"item lang-dropdown-item{active_cls}",
                     style={"cursor": "pointer"},
                 )
             )
-        return items
+
+        return html.Div(
+            [
+                html.Img(
+                    src=current[1],
+                    className="lang-flag",
+                    style={"opacity": "1"},
+                    disable_n_clicks=True,
+                ),
+                html.Span(
+                    f" {current[2]}",
+                    style={"marginLeft": "4px"},
+                    disable_n_clicks=True,
+                ),
+                html.I(className="dropdown icon", disable_n_clicks=True),
+                html.Div(dropdown_items, className="menu", disable_n_clicks=True),
+            ],
+            className="ui simple dropdown item lang-dropdown",
+            disable_n_clicks=True,
+        )

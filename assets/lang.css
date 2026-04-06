@@ -27,18 +27,58 @@ body {
   opacity: 0.75;
   transition: opacity 0.15s;
 }
-.ui.menu .lang-item.item:hover .lang-flag,
-.ui.menu .lang-item.active.item .lang-flag {
+.ui.menu .lang-dropdown:hover .lang-flag {
   opacity: 1;
 }
 
-/* Compact language items: flag-only, minimal padding */
-.ui.menu .right.menu > .lang-item.item {
-  flex: 0 0 auto;
-  padding-left: 0.35em !important;
-  padding-right: 0.35em !important;
-  padding-top: 0.5em !important;
-  padding-bottom: 0.5em !important;
+/* ── Language dropdown trigger ── */
+.lang-dropdown.ui.dropdown.item {
+  padding: 0.45em 0.6em !important;
+  display: flex !important;
+  align-items: center !important;
+}
+
+/* Dropdown caret arrow */
+.lang-dropdown .dropdown.icon {
+  margin-left: 0.35em !important;
+  font-size: 0.75em;
+}
+
+/* ── Dropdown menu panel ── */
+.lang-dropdown > .menu {
+  min-width: 100px !important;
+  right: 0 !important;
+  left: auto !important;
+  border-radius: 0 0 5px 5px !important;
+  background: #fff !important;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.18) !important;
+  border: 1px solid rgba(0, 0, 0, 0.08) !important;
+  margin-top: 0 !important;
+  padding: 4px 0 !important;
+}
+
+/* Individual items inside the dropdown */
+.lang-dropdown .menu > .lang-dropdown-item.item {
+  display: flex !important;
+  align-items: center !important;
+  padding: 0.55em 0.9em !important;
+  font-size: 0.8em !important;
+  color: #333 !important;
+  line-height: 1.3 !important;
+}
+.lang-dropdown .menu > .lang-dropdown-item.item:hover {
+  background: rgba(33, 133, 208, 0.09) !important;
+  color: #1a1a1a !important;
+}
+.lang-dropdown .menu > .lang-dropdown-item.item.active {
+  background: rgba(33, 133, 208, 0.14) !important;
+  font-weight: 700 !important;
+}
+
+/* Flags inside dropdown items */
+.lang-dropdown .menu .lang-flag {
+  height: 16px !important;
+  opacity: 1 !important;
 }
 
 body :not(h1):not(h2):not(h3):not(h4):not(h5):not(h6) {
