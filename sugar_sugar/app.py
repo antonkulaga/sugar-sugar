@@ -557,7 +557,7 @@ def update_prediction_text_on_language_change(
 ) -> tuple:
     """Update translatable text on the prediction page when language changes mid-game."""
     if pathname != '/prediction':
-        return tuple(no_update for _ in range(11))
+        raise PreventUpdate
 
     locale = normalize_locale(interface_language)
     return (
@@ -624,9 +624,8 @@ def update_ending_text_on_language_change(
     glucose_unit: Optional[str],
 ) -> tuple:
     """Update translatable text on the ending page when language changes."""
-    n_outputs = 19
     if pathname != '/ending':
-        return tuple(no_update for _ in range(n_outputs))
+        raise PreventUpdate
 
     locale = normalize_locale(interface_language)
     unit = glucose_unit if glucose_unit in ('mg/dL', 'mmol/L') else 'mg/dL'
@@ -2794,19 +2793,42 @@ def handle_back_to_final_from_upload(n_clicks: Optional[int]) -> Tuple[str, Dict
      Output('randomization-initialized', 'data', allow_duplicate=True),
      Output('glucose-unit', 'data', allow_duplicate=True),
      Output('interface-language', 'data', allow_duplicate=True),
-     Output('last-visited-page', 'data', allow_duplicate=True)],
+     Output('last-visited-page', 'data', allow_duplicate=True),
+     Output('full-df', 'data', allow_duplicate=True),
+     Output('current-window-df', 'data', allow_duplicate=True),
+     Output('events-df', 'data', allow_duplicate=True),
+     Output('is-example-data', 'data', allow_duplicate=True),
+     Output('data-source-name', 'data', allow_duplicate=True),
+     Output('initial-slider-value', 'data', allow_duplicate=True),
+     Output('clean-storage-flag', 'data', allow_duplicate=True),
+     Output('session-active', 'data', allow_duplicate=True)],
     [Input('restart-button', 'n_clicks')],
     prevent_initial_call=True
 )
-def handle_restart_button(n_clicks: Optional[int]) -> Tuple[str, None, Dict[str, bool], bool, str, str, None]:
-    """Handle restart button - navigate to start and clear user info. Data reset handled elsewhere."""
+def handle_restart_button(n_clicks: Optional[int]) -> tuple:
+    """Handle restart button — fully reset session state including data stores."""
     print(f"DEBUG handle_restart_button FIRED: n_clicks={n_clicks}")
-    if n_clicks:
-        with start_action(action_type=u"handle_restart_button") as action:
-            action.log(message_type="restart_clicked")
-        chart_mode = {'hide_last_hour': True}
-        return '/', None, chart_mode, False, 'mg/dL', 'en', None
-    return no_update, no_update, no_update, no_update, no_update, no_update, no_update
+    if not n_clicks:
+        raise PreventUpdate
+    with start_action(action_type=u"handle_restart_button") as action:
+        action.log(message_type="restart_clicked")
+    return (
+        '/',                       # url pathname
+        None,                      # user-info-store
+        {'hide_last_hour': True},  # glucose-chart-mode
+        False,                     # randomization-initialized
+        'mg/dL',                   # glucose-unit
+        'en',                      # interface-language
+        None,                      # last-visited-page
+        None,                      # full-df
+        None,                      # current-window-df
+        None,                      # events-df
+        True,                      # is-example-data
+        'example.csv',             # data-source-name
+        None,                      # initial-slider-value
+        True,                      # clean-storage-flag
+        True,                      # session-active
+    )
 
 
 @app.callback(
