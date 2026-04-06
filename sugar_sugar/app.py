@@ -3084,21 +3084,15 @@ app.clientside_callback(
 app.clientside_callback(
     """
     function(pathname) {
-        var restorable = ["/", "/startup", "/prediction", "/ending", "/final"];
-        if (restorable.indexOf(pathname) === -1) {
-            return [window.dash_clientside.no_update, window.dash_clientside.no_update];
+        // Only persist actual game-flow pages (never "/" – the landing page).
+        // This ensures clicking the "Game" navbar link (href="/") does not
+        // overwrite the stored last-game-page, so the redirect-back callback
+        // can return the user to their in-progress game.
+        var persistable = ["/startup", "/prediction", "/ending", "/final"];
+        if (persistable.indexOf(pathname) !== -1) {
+            return [pathname, true];
         }
-        // On the very first render the URL is always "/".  Skip persisting "/"
-        // so the restore callback can read the real stored value first.
-        if (!window._sugarPagePersistReady) {
-            window._sugarPagePersistReady = true;
-            if (pathname === "/") {
-                return [window.dash_clientside.no_update, window.dash_clientside.no_update];
-            }
-        }
-        // Mark session as active once the user navigates to any game page.
-        var active = (pathname !== "/") ? true : window.dash_clientside.no_update;
-        return [pathname, active];
+        return [window.dash_clientside.no_update, window.dash_clientside.no_update];
     }
     """,
     [Output('last-visited-page', 'data'),
@@ -3154,6 +3148,8 @@ def restore_page_on_load(
 
     if last_page in ("/prediction", "/ending", "/final") and not user_info:
         raise PreventUpdate
+    if last_page == "/ending" and not full_df_data:
+        raise PreventUpdate
 
     rounds_played = 0
     current_round = 0
@@ -3196,6 +3192,58 @@ def restore_page_on_load(
             "max_rounds": MAX_ROUNDS,
         }
         return dialog_data, True, no_update, True
+
+
+# --- In-session redirect: "Game" navbar link → last game page ---
+#
+# With ``dcc.Link`` navigation (no full page reload), stores are already
+# populated.  When the user clicks "Game" (href="/") while mid-game, this
+# callback redirects them back to their last game page immediately.
+
+@app.callback(
+    Output('url', 'pathname', allow_duplicate=True),
+    [Input('url', 'pathname')],
+    [State('last-visited-page', 'data'),
+     State('user-info-store', 'data'),
+     State('full-df', 'data')],
+    prevent_initial_call=True,
+)
+def redirect_landing_to_game(
+    pathname: Optional[str],
+    last_page: Optional[str],
+    user_info: Optional[Dict[str, Any]],
+    full_df_data: Optional[Dict],
+) -> str:
+    """Redirect ``/`` → last game page when an active session exists.
+
+    Only fires for in-session client-side navigation (stores are populated).
+    On a fresh page load the stores are still ``None`` and ``PreventUpdate``
+    lets ``restore_page_on_load`` handle the redirect via hydration.
+    """
+    if pathname != "/" or _is_chart_mode:
+        raise PreventUpdate
+
+    if not last_page or last_page == "/":
+        raise PreventUpdate
+
+    if last_page in ("/prediction", "/ending", "/final") and not user_info:
+        raise PreventUpdate
+
+    if last_page == "/ending":
+        has_ptd = bool(user_info and "prediction_table_data" in user_info)
+        if has_ptd and full_df_data:
+            return "/ending"
+        if user_info:
+            return "/prediction"
+        raise PreventUpdate
+
+    if last_page == "/final":
+        return "/final" if user_info else "/prediction"
+
+    if last_page in ("/startup", "/prediction"):
+        return last_page
+
+    raise PreventUpdate
 
 
 # --- Resume dialog: render, continue, start-over ---

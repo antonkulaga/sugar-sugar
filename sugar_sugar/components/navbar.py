@@ -1,4 +1,4 @@
-from dash import html
+from dash import dcc, html
 from sugar_sugar.i18n import t
 
 
@@ -10,6 +10,12 @@ class NavBar(html.Div):
 
     Left items:  Game | The Study | Video instructions | Contact us
     Right items: language flags
+
+    Uses ``dcc.Link`` for navigation so page switches happen via client-side
+    routing (``pushState``) without a full page reload.  This preserves all
+    in-memory and localStorage-backed ``dcc.Store`` values and avoids the
+    hydration race that previously caused users to fall back to the landing
+    page when returning to the Game tab.
     """
 
     def __init__(self, *, locale: str = "en", current_page: str = "/") -> None:
@@ -29,35 +35,30 @@ class NavBar(html.Div):
 
     def _create_navbar(self) -> list:
         left_items: list = [
-            html.A(
+            dcc.Link(
                 t("ui.common.game", locale=self._locale),
                 href="/",
                 className=self._active_cls(*_GAME_PAGES),
-                disable_n_clicks=True,
             ),
-            html.A(
+            dcc.Link(
                 t("ui.common.the_study", locale=self._locale),
                 href="/about",
                 className=self._active_cls("/about"),
-                disable_n_clicks=True,
             ),
-            html.A(
+            dcc.Link(
                 t("ui.common.faq", locale=self._locale),
                 href="/faq",
                 className=self._active_cls("/faq"),
-                disable_n_clicks=True,
             ),
-            html.A(
+            dcc.Link(
                 t("ui.common.video_instructions", locale=self._locale),
                 href="/demo",
                 className=self._active_cls("/demo"),
-                disable_n_clicks=True,
             ),
-            html.A(
+            dcc.Link(
                 t("ui.common.contact_us", locale=self._locale),
                 href="/contact",
                 className=self._active_cls("/contact"),
-                disable_n_clicks=True,
             ),
         ]
 

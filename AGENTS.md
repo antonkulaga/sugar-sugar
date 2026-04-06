@@ -66,6 +66,33 @@ Interactive Dash components (sliders, dropdowns, inputs) that are destroyed and 
 
 The app forces a desktop-width layout viewport (`_DESKTOP_LAYOUT_VIEWPORT_CSS_PX = 1280`) via a `meta_tags` viewport entry on the `Dash()` constructor. This makes mobile browsers scale the page like "Request desktop site" instead of using `width=device-width`. Do not revert to `device-width`; the chart/drawing UI is unusable at phone-width layouts.
 
+## Session persistence & navigation contract
+
+These are the expected behaviours that every change must preserve. Treat regressions here as bugs.
+
+1. **First visit → consent form.** A new user lands on `/` (landing page with embedded consent form). She fills it in, proceeds to `/startup` → `/prediction`. No resume dialog, no redirect.
+2. **Cross-session resume (localStorage).** The game can span many rounds. All session state (`user-info-store`, `full-df`, `last-visited-page`, etc.) lives in localStorage. If the user closes the browser and reopens hours later, `restore_page_on_load` detects the persisted state, and because `session-active` (sessionStorage) is gone the **resume dialog** appears asking "Continue" or "Start Over".
+3. **In-session tab switching (no dialog).** While mid-game the user can click "The Study", "FAQ", "Contact us", etc. and then click "Game" to return. Navbar links use `dcc.Link` (client-side routing, no page reload), so all stores stay populated. `redirect_landing_to_game` silently redirects `/` → the last game page. **No resume dialog must appear in this flow.**
+4. **Explicit exit / Start Over cleans storage.** Both the "Finish / Exit" button, the restart button on `/final`, and the "Start Over" button in the resume dialog set `last-visited-page=None` and `clean-storage-flag=True`, which wipes localStorage via a clientside callback. After cleanup the user lands on `/` as a fresh visitor.
+5. **`uv run start --clean`.** Sets `_CLEAN_STORAGE=1` env var → `clean-storage-flag=True` in the layout. The clientside callback clears localStorage once on first connect. Subsequent interactions use localStorage normally. Every new browser tab connecting to the same running server also cleans once (stop the server to stop cleaning).
+6. **No spurious resume dialogs.** The resume dialog must only appear on genuine fresh sessions (scenario 2). It must never pop up when switching navbar tabs (scenario 3), pressing F5 within an active session, or changing language.
+
+### Key stores involved
+
+| Store | `storage_type` | Purpose |
+|---|---|---|
+| `last-visited-page` | `local` | Last game-flow page (`/startup`, `/prediction`, `/ending`, `/final`). Never stores `/` or non-game pages. |
+| `session-active` | `session` | `True` once the user interacts. Survives in-tab reloads (F5) but clears on tab close, distinguishing fresh sessions from reloads. |
+| `page-restore-done` | `memory` | One-shot flag preventing `restore_page_on_load` from acting more than once per page load. Resets on every full reload. |
+| `clean-storage-flag` | `memory` | When `True`, a clientside callback wipes localStorage and resets the flag to `False`. |
+| `resume-dialog-target` | `memory` | Holds target page + round info for the resume dialog. Must be set to `None` when the dialog is dismissed. |
+
+### How each callback participates
+
+- **Clientside persist callback** — writes the current pathname to `last-visited-page` only for persistable game pages (`/startup`, `/prediction`, `/ending`, `/final`). Never writes `/`.
+- **`restore_page_on_load`** — fires on full page loads as localStorage stores hydrate. If `session-active` is `True` (same tab, e.g. F5), silently redirects. If `False` (fresh session), shows resume dialog. Waits for both `user-info-store` and `full-df` before deciding the target for `/ending`.
+- **`redirect_landing_to_game`** — fires on in-session client-side navigation to `/`. Reads the already-populated stores and redirects to the last game page. Does nothing on fresh page loads (stores are `None`).
+
 ## Learned User Preferences
 
 - Never attempt browser automation (drawing predictions, clicking through multi-step forms) with LLM agents — it fails; always use `uv run chart --prefill` instead
@@ -86,11 +113,11 @@ The app forces a desktop-width layout viewport (`_DESKTOP_LAYOUT_VIEWPORT_CSS_PX
 - The app uses Fomantic UI CSS/JS loaded via `external_stylesheets` and `external_scripts` (jQuery is loaded first as a dependency)
 - GitHub repo is GlucoseDAO/sugar-sugar; issues are tracked there
 - `suppress_callback_exceptions=True` is set on the Dash app to allow callbacks referencing components not yet in the layout
-- The navbar is a Fomantic UI `massive blue inverted tabular menu` (`NavBar` class in `sugar_sugar/components/navbar.py`). Left items: Game, The Study, Video instructions, Contact us. Right items: language flags. The active tab is highlighted via a CSS bottom-border rule. Navbar uses `html.A` for navigation links (not `dcc.Link`) — `html.A` causes full page reloads which reset `memory`-type stores.
+- The navbar is a Fomantic UI `massive blue inverted tabular menu` (`NavBar` class in `sugar_sugar/components/navbar.py`). Left items: Game, The Study, Video instructions, Contact us. Right items: language flags. The active tab is highlighted via a CSS bottom-border rule. Navbar uses `dcc.Link` for navigation (client-side routing, no full page reload) — this preserves all `dcc.Store` values and avoids hydration races. Language flags still use `html.A` (they trigger callbacks, not navigation). A `redirect_landing_to_game` callback redirects `/` → last game page when the user clicks "Game" mid-session.
 - `STORAGE_TYPE` env var controls `dcc.Store` `storage_type` and input `persistence_type` across the app; defaults to `local` (localStorage persists across sessions)
 - When using `dcc.Store` with `storage_type='local'`, the store hydrates from localStorage client-side **asynchronously** after initial render; use it as callback `Input` (not `State`) to react to hydration — see "localStorage hydration race condition" pitfall above
 - A `last-visited-page` store + `restore_page_on_load` callback restores the user's last page when `STORAGE_TYPE=local`; a resume dialog (continue / start over) appears for returning users. Page flow: `/` → `/startup` → `/prediction` → `/ending` → `/final`. The callback uses `user-info-store` and `full-df` as Inputs (not State) to avoid the hydration race
-- `page-restore-done` uses `storage_type='session'` (sessionStorage) so it persists across full-page reloads within the same browser tab but clears when the tab is closed. This distinguishes a genuine new session (show resume dialog) from an in-tab reload like navigating back from Contact (skip resume dialog).
+- `page-restore-done` uses `storage_type='memory'` — it resets on every full page reload. `session-active` (sessionStorage) is the store that distinguishes a genuine new session (show resume dialog) from an in-tab reload (silent redirect). See "Session persistence & navigation contract" above.
 - `initialize_data_on_url_change` must only load fresh data when `pathname == '/prediction'` and `full-df` is empty. For all other pathnames it returns `no_update` to avoid clobbering persisted stores during resume
 - `dcc.Location` must NOT have a hardcoded `pathname="/"` — it overrides the actual browser URL and breaks direct navigation to `/about`, `/contact`, etc. Omit `pathname` so it reads from the browser.
 - Dash clientside callbacks cannot use the same `dcc.Store` as both Input and Output — causes `dc[namespace][function_name] is not a function` JS error. Use a separate store or `State` instead.
