@@ -17,7 +17,8 @@ class ConsentFormPage(html.Div):
             children=[
                 html.Div(
                     style={
-                        "minHeight": "100vh",
+                        "height": "100vh",
+                        "overflow": "hidden",
                         "padding": "28px 18px",
                         "background": "linear-gradient(135deg, #eff6ff 0%, #f8fafc 35%, #fff7ed 100%)",
                     },
@@ -31,12 +32,8 @@ class ConsentFormPage(html.Div):
                                     [
                                         html.Div(
                                             consent_notice_children(locale),
-                                            style={
-                                                "maxHeight": "calc(100vh - 240px)",
-                                                "overflowY": "auto",
-                                                "paddingRight": "10px",
-                                            },
                                             id="consent-form-scroll",
+                                            disable_n_clicks=True,
                                         ),
                                         html.Hr(style={"margin": "18px 0"}),
                                         html.A(

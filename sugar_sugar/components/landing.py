@@ -216,10 +216,7 @@ class LandingPage(html.Div):
                             ),
                         ],
                         style={
-                            "maxHeight": "calc(100vh - 360px)",
-                            "overflowY": "auto",
                             "paddingRight": "10px",
-                            "minHeight": "0",
                         },
                         id="consent-notice-scroll",
                     ),

@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Final, Optional
 
 from sugar_sugar.i18n import normalize_locale, t
-from sugar_sugar.static_markdown import static_markdown_autosize_iframe
+from sugar_sugar.static_markdown import static_markdown_iframe
 
 _CONSENT_NOTICE_MD_RELATIVE_PATH: Final[Path] = Path(
     "data/input/patient_consent_form/Teilnehmerinformation_und_Einwilligungserklaerung_v2.docx.md"
@@ -863,10 +863,10 @@ def consent_notice_children(locale: Optional[str]) -> list[object]:
     md_text = out_text
 
     return [
-        static_markdown_autosize_iframe(
+        static_markdown_iframe(
             md_text,
             title=t("ui.landing.patient_consent_form_title", locale=loc),
-            iframe_id="consent-notice-iframe",
+            iframe_style={"height": "min(55vh, 480px)"},
         )
     ]
 
