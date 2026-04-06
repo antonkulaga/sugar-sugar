@@ -40,7 +40,7 @@ logs_dir.mkdir(exist_ok=True)
 to_nice_stdout()
 to_nice_file(logs_dir / 'sugar_sugar.json', logs_dir / 'sugar_sugar.log')
 
-from sugar_sugar.i18n import setup_i18n, normalize_locale, t
+from sugar_sugar.i18n import setup_i18n, normalize_locale, t, t_raw
 setup_i18n()
 
 from sugar_sugar.data import load_glucose_data
@@ -387,7 +387,11 @@ def reset_glucose_unit_on_start_page(pathname: Optional[str]) -> str:
     [Input('lang-en', 'n_clicks'),
      Input('lang-de', 'n_clicks'),
      Input('lang-uk', 'n_clicks'),
-     Input('lang-ro', 'n_clicks')],
+     Input('lang-ro', 'n_clicks'),
+     Input('lang-ru', 'n_clicks'),
+     Input('lang-zh', 'n_clicks'),
+     Input('lang-fr', 'n_clicks'),
+     Input('lang-es', 'n_clicks')],
     [State('interface-language', 'data')],
     prevent_initial_call=True
 )
@@ -396,17 +400,27 @@ def set_interface_language(
     n_de: Optional[int],
     n_uk: Optional[int],
     n_ro: Optional[int],
+    n_ru: Optional[int],
+    n_zh: Optional[int],
+    n_fr: Optional[int],
+    n_es: Optional[int],
     current_language: Optional[str],
 ) -> str:
     """Set the interface language from navbar flag buttons."""
     triggered = ctx.triggered_id
     if not triggered:
         raise PreventUpdate
-    click_value = {'lang-en': n_en, 'lang-de': n_de, 'lang-uk': n_uk, 'lang-ro': n_ro}.get(triggered)
-    if not click_value:
+    _clicks = {
+        'lang-en': n_en, 'lang-de': n_de, 'lang-uk': n_uk, 'lang-ro': n_ro,
+        'lang-ru': n_ru, 'lang-zh': n_zh, 'lang-fr': n_fr, 'lang-es': n_es,
+    }
+    if not _clicks.get(triggered):
         raise PreventUpdate
-    lang_map = {'lang-en': 'en', 'lang-de': 'de', 'lang-uk': 'uk', 'lang-ro': 'ro'}
-    new_lang = lang_map.get(triggered)
+    _lang_map = {
+        'lang-en': 'en', 'lang-de': 'de', 'lang-uk': 'uk', 'lang-ro': 'ro',
+        'lang-ru': 'ru', 'lang-zh': 'zh', 'lang-fr': 'fr', 'lang-es': 'es',
+    }
+    new_lang = _lang_map.get(triggered)
     if not new_lang or new_lang == current_language:
         raise PreventUpdate
     return new_lang
@@ -515,6 +529,8 @@ def update_on_language_change(
         return create_contact_page(locale=locale), warning_content, navbar
     if pathname == '/demo':
         return create_demo_page(locale=locale), warning_content, navbar
+    if pathname == '/faq':
+        return create_faq_page(locale=locale), warning_content, navbar
     # Landing page
     return LandingPage(locale=locale), warning_content, navbar
 
@@ -541,7 +557,7 @@ def update_prediction_text_on_language_change(
 ) -> tuple:
     """Update translatable text on the prediction page when language changes mid-game."""
     if pathname != '/prediction':
-        return tuple(no_update for _ in range(11))
+        raise PreventUpdate
 
     locale = normalize_locale(interface_language)
     return (
@@ -608,9 +624,8 @@ def update_ending_text_on_language_change(
     glucose_unit: Optional[str],
 ) -> tuple:
     """Update translatable text on the ending page when language changes."""
-    n_outputs = 19
     if pathname != '/ending':
-        return tuple(no_update for _ in range(n_outputs))
+        raise PreventUpdate
 
     locale = normalize_locale(interface_language)
     unit = glucose_unit if glucose_unit in ('mg/dL', 'mmol/L') else 'mg/dL'
@@ -768,16 +783,67 @@ def display_page(
             return create_contact_page(locale=locale), warning_content, navbar
         if pathname == '/demo':
             return create_demo_page(locale=locale), warning_content, navbar
+        if pathname == '/faq':
+            return create_faq_page(locale=locale), warning_content, navbar
         # Default route: landing page
         return (LandingPage(locale=locale), warning_content, navbar)
 
 from dash import html
+
 
 def create_info_page(*, locale: str, title: str, body: str) -> html.Div:
     return html.Div(
         [
             html.H1(title, disable_n_clicks=True),
             html.Div(body, style={"marginBottom": "14px"}, disable_n_clicks=True),
+        ],
+        className="info-page",
+        disable_n_clicks=True,
+    )
+
+
+def create_faq_page(*, locale: str) -> html.Div:
+    sections: list[Any] = t_raw("ui.faq.sections", locale=locale)
+    section_divs: list[Any] = []
+    for section in sections:
+        items: list[Any] = []
+        for item in section.get("items", []):
+            items.append(
+                html.Div(
+                    [
+                        html.H3(
+                            item["q"],
+                            style={"marginBottom": "6px"},
+                            disable_n_clicks=True,
+                        ),
+                        dcc.Markdown(
+                            item["a"],
+                            link_target="_blank",
+                            style={"marginBottom": "0"},
+                        ),
+                    ],
+                    className="ui segment",
+                    style={"marginBottom": "8px"},
+                    disable_n_clicks=True,
+                )
+            )
+        section_divs.append(
+            html.Div(
+                [
+                    html.H2(
+                        section["title"],
+                        style={"marginBottom": "12px", "marginTop": "24px"},
+                        disable_n_clicks=True,
+                    ),
+                    html.Div(items, disable_n_clicks=True),
+                ],
+                disable_n_clicks=True,
+            )
+        )
+    return html.Div(
+        [
+            html.H1(t("ui.faq.title", locale=locale), disable_n_clicks=True),
+            html.Div(section_divs, disable_n_clicks=True),
         ],
         className="info-page",
         disable_n_clicks=True,
@@ -2727,19 +2793,42 @@ def handle_back_to_final_from_upload(n_clicks: Optional[int]) -> Tuple[str, Dict
      Output('randomization-initialized', 'data', allow_duplicate=True),
      Output('glucose-unit', 'data', allow_duplicate=True),
      Output('interface-language', 'data', allow_duplicate=True),
-     Output('last-visited-page', 'data', allow_duplicate=True)],
+     Output('last-visited-page', 'data', allow_duplicate=True),
+     Output('full-df', 'data', allow_duplicate=True),
+     Output('current-window-df', 'data', allow_duplicate=True),
+     Output('events-df', 'data', allow_duplicate=True),
+     Output('is-example-data', 'data', allow_duplicate=True),
+     Output('data-source-name', 'data', allow_duplicate=True),
+     Output('initial-slider-value', 'data', allow_duplicate=True),
+     Output('clean-storage-flag', 'data', allow_duplicate=True),
+     Output('session-active', 'data', allow_duplicate=True)],
     [Input('restart-button', 'n_clicks')],
     prevent_initial_call=True
 )
-def handle_restart_button(n_clicks: Optional[int]) -> Tuple[str, None, Dict[str, bool], bool, str, str, None]:
-    """Handle restart button - navigate to start and clear user info. Data reset handled elsewhere."""
+def handle_restart_button(n_clicks: Optional[int]) -> tuple:
+    """Handle restart button — fully reset session state including data stores."""
     print(f"DEBUG handle_restart_button FIRED: n_clicks={n_clicks}")
-    if n_clicks:
-        with start_action(action_type=u"handle_restart_button") as action:
-            action.log(message_type="restart_clicked")
-        chart_mode = {'hide_last_hour': True}
-        return '/', None, chart_mode, False, 'mg/dL', 'en', None
-    return no_update, no_update, no_update, no_update, no_update, no_update, no_update
+    if not n_clicks:
+        raise PreventUpdate
+    with start_action(action_type=u"handle_restart_button") as action:
+        action.log(message_type="restart_clicked")
+    return (
+        '/',                       # url pathname
+        None,                      # user-info-store
+        {'hide_last_hour': True},  # glucose-chart-mode
+        False,                     # randomization-initialized
+        'mg/dL',                   # glucose-unit
+        'en',                      # interface-language
+        None,                      # last-visited-page
+        None,                      # full-df
+        None,                      # current-window-df
+        None,                      # events-df
+        True,                      # is-example-data
+        'example.csv',             # data-source-name
+        None,                      # initial-slider-value
+        True,                      # clean-storage-flag
+        True,                      # session-active
+    )
 
 
 @app.callback(
@@ -4178,7 +4267,7 @@ def main(
 
 @cli.command()
 def chart(
-    file: Optional[Path] = typer.Option(None, "--file", "-f", help="CSV file to load (Dexcom/Libre/Medtronic). Default: built-in example."),
+    file: Optional[Path] = typer.Option(None, "--file", "-f", help="CSV file to load (Dexcom/Libre/Medtronic/Nightscout). Default: built-in example."),
     points: int = typer.Option(DEFAULT_POINTS, "--points", "-p", help="Number of data points in the window"),
     start: Optional[int] = typer.Option(None, "--start", "-s", help="Start index for the data window (default: random)"),
     unit: str = typer.Option("mg/dL", "--unit", "-u", help="Glucose unit: mg/dL or mmol/L"),

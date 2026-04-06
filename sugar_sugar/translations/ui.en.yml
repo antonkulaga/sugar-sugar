@@ -11,6 +11,7 @@ en:
     the_study: "The Study"
     contact_us: "Contact us"
     video_instructions: "Video instructions"
+    faq: "FAQ"
 
   language:
     choose: "Language"
@@ -18,6 +19,8 @@ en:
     de: "Deutsch"
     uk: "Українська"
     ro: "Română"
+    ru: "Русский"
+    zh: "中文"
 
   landing:
     patient_consent_form_title: "Patient consent form"
@@ -27,7 +30,7 @@ en:
     tagline: "A game to test your glucose-predicting superpowers."
     how_it_works: "How it works"
     how_it_works_steps:
-      - "Upload Dexcom/Libre/Medtronic CSV (or use the sample dataset)"
+      - "Upload Dexcom/Libre/Medtronic/Nightscout CSV (or use the sample dataset)"
       - "Draw your predicted glucose trend on the chart"
       - "Compare predictions to the real values"
       - "See accuracy metrics (MAE/RMSE/MAPE)"
@@ -146,7 +149,7 @@ en:
     upload_required: "Upload required"
     upload_success: "Successfully loaded data from %{filename}. This data will be used for predictions."
     example_data_now_using: "Now using generic data. Upload a CSV file for personalized analysis."
-    example_data_warning: "Currently using generic data. Upload your own Dexcom/Libre/Medtronic CSV file for personalized analysis."
+    example_data_warning: "Currently using generic data. Upload your own Dexcom/Libre/Medtronic/Nightscout CSV file for personalized analysis."
     current_data_source: "Current Data Source:"
     weight_label: "Weight"
     description_1: "Test your glucose prediction skills!"
@@ -249,4 +252,56 @@ en:
     line1: "These scores are for research purposes only"
     line2: "Regardless of your results, do not change any medical decisions based on this app"
     line3: "Always follow your healthcare provider's guidance"
+
+  faq:
+    title: "Frequently Asked Questions"
+    sections:
+      - title: "Why this study matters"
+        items:
+          - q: "What is Sugar Sugar?"
+            a: "Sugar Sugar is a web-based research app built with Dash. It turns glucose forecasting into an interactive game: you see part of a CGM trace, draw how you think it will continue, and then compare your prediction with the real values. The goal is to measure how accurately humans can anticipate short-term glucose dynamics."
+          - q: "Is this a real research study?"
+            a: "Yes. Sugar Sugar is part of a real research effort. The study received clearance from the Ethics Committee of University Medicine Rostock (Universitätsmedizin Rostock) in Germany — we mention this as part of the study background so you know the research is conducted responsibly."
+          - q: "Why does predicting glucose matter for people with diabetes?"
+            a: "For people with diabetes, accurate short-term glucose forecasts can support safer day-to-day decisions about insulin, carbohydrates, exercise, and timing. Better prediction can help reduce dangerous highs and lows and make glucose management less stressful."
+          - q: "Why does predicting glucose matter for people without diabetes?"
+            a: "Glucose is a core metabolic signal linked to energy, cognition, mood, exercise response, and long-term health. For non-diabetic people, prediction can reveal how food, sleep, stress, and activity shape metabolism in real time — useful for preventive health and lifestyle optimisation."
+          - q: "Why is human accuracy so important for machine learning?"
+            a: "There is currently no published human-baseline benchmark for CGM glucose prediction. Without knowing how well an informed human can predict glucose trends, we cannot assess whether any ML model is genuinely useful — it might be worse than a knowledgeable diabetic, or better only in specific scenarios. This study establishes that baseline so future ML work can be compared meaningfully."
+      - title: "How the study works"
+        items:
+          - q: "Who can participate?"
+            a: "Anyone 18+. CGM users are especially valuable, but non-CGM users can also play with generic data."
+          - q: "What CGM devices and formats are supported?"
+            a: "Dexcom, Libre, Medtronic, and Nightscout exports are supported. A generic sample dataset is also available if you don't have a CGM device."
+          - q: "How long does it take?"
+            a: "Each round takes about 2–3 minutes. A full session (12 rounds) is around 30 minutes, but you can split it across multiple visits."
+          - q: "Can I stop partway through and resume later?"
+            a: "Yes. The game saves your progress locally in the browser. If 12 rounds feel like too much in one sitting, close the tab and come back — you will be offered to continue from where you left off. At least a few rounds are useful, but every extra round improves the data quality."
+          - q: "What if I do not like my results? Should I restart?"
+            a: "Please do not restart just because you are unhappy with your accuracy. People naturally prefer to keep good scores and discard bad ones, but that would skew the study and make the results less scientifically valid. If you feel disappointed, the best thing is to continue with another round rather than resetting your progress."
+          - q: "What are the accuracy metrics?"
+            a: "We use standard forecasting metrics — MAE, RMSE, and MAPE — to quantify how close your predicted glucose curve was to the real one. MAE is the average absolute error: it tells you how far off you were on average. RMSE penalises larger mistakes more strongly, so it highlights cases where the prediction was badly wrong. MAPE expresses error as a percentage, which helps compare performance across different glucose ranges. Together these metrics give a more complete picture than a single score."
+      - title: "Data and privacy"
+        items:
+          - q: "Is any of my data stored?"
+            a: "Until you choose to submit, everything stays in your own browser. Nothing is sent to our servers unless you actively consent and submit results. If you select \"I just want to play\", no data ever leaves your device."
+          - q: "What data is collected if I consent?"
+            a: "Gameplay data (drawn predictions, accuracy metrics), optionally your uploaded CGM file, and a short questionnaire (age, CGM experience, diabetes status, etc.)."
+          - q: "Is my CGM data shared with third parties?"
+            a: "No. Data is used solely for this study and never sold or shared with unauthorised parties."
+          - q: "Can I withdraw?"
+            a: "Yes, at any time by closing the browser. To have already-submitted data removed, please contact the study team."
+          - q: "What stops someone from faking their results?"
+            a: "Honestly? Nothing technical. Since all data lives in your own browser's local storage, we rely entirely on the honesty and good faith of our participants — and we genuinely trust you. That said, if you really want to impress your friends with a suspiciously perfect prediction score, please just take a screenshot and touch it up in an image editor, or use your browser's DevTools to edit the numbers on screen. Please do not submit fake data to the study — it directly harms the scientific validity of the research that everyone benefits from."
+      - title: "Help and contributing"
+        items:
+          - q: "What if I found a bug?"
+            a: "Please open an issue on the project GitHub at [github.com/GlucoseDAO/sugar-sugar](https://github.com/GlucoseDAO/sugar-sugar). Bug reports are very helpful for improving the app and for identifying anything that could affect the study experience or data quality."
+          - q: "I am a software developer. Can I contribute a feature?"
+            a: "Yes, contributions are welcome through the project GitHub at [github.com/GlucoseDAO/sugar-sugar](https://github.com/GlucoseDAO/sugar-sugar). We especially welcome fixes, UI improvements, support for more sensors or file formats, and other changes that improve usability without altering the scientific protocol. Because this is an active study, changes that affect the study design midstream — such as new questionnaire fields or modifications to the core task — should be discussed with the team first."
+          - q: "How else can I help the study?"
+            a: "Even if you are not a software developer, you can still help a lot. Share the study with relevant communities, tell other CGM users or interested people about it, report unclear wording or usability problems, and contact the study team through the project contact channels if you would like to collaborate in any way."
+          - q: "Where can I find the full study design?"
+            a: "On the \"The Study\" page in the navigation bar, which includes a PDF download and a link to the GitHub repository."
 

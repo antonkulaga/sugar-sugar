@@ -19,21 +19,26 @@ body {
 
 /* Language flag images inside the Fomantic menu */
 .ui.menu .lang-flag {
-  width: 30px;
-  height: 20px;
-  object-fit: cover;
+  height: 18px;
+  width: auto;
   display: inline-block;
-  border-radius: 8px;
-  border: 1px solid rgba(15, 23, 42, 0.12);
-  background: #ffffff;
+  border-radius: 2px;
   vertical-align: middle;
+  opacity: 0.75;
+  transition: opacity 0.15s;
+}
+.ui.menu .lang-item.item:hover .lang-flag,
+.ui.menu .lang-item.active.item .lang-flag {
+  opacity: 1;
 }
 
-/* Compact language items: don't auto-stretch, keep consistent padding */
+/* Compact language items: flag-only, minimal padding */
 .ui.menu .right.menu > .lang-item.item {
   flex: 0 0 auto;
-  padding-left: 0.8em !important;
-  padding-right: 0.8em !important;
+  padding-left: 0.35em !important;
+  padding-right: 0.35em !important;
+  padding-top: 0.5em !important;
+  padding-bottom: 0.5em !important;
 }
 
 body :not(h1):not(h2):not(h3):not(h4):not(h5):not(h6) {
@@ -82,9 +87,19 @@ body .ui.large.menu {
 }
 
 
-/* Make checkboxes outlined in black on the landing page */
+/* Make checkboxes outlined in black and larger on the landing page */
 #landing-page .form-check-input {
   border-color: black;
+  width: 1.4em;
+  height: 1.4em;
+  margin-top: 0.15em;
+  cursor: pointer;
+}
+
+#landing-page .form-check-label {
+  font-size: 15px;
+  padding-left: 0.4em;
+  cursor: pointer;
 }
 
 /* Info page styling (About, Contact, Demo pages) */
@@ -94,12 +109,14 @@ body .ui.large.menu {
   background: linear-gradient(135deg, #eff6ff 0%, #f8fafc 35%, #fff7ed 100%);
   margin: 0 auto;
   max-width: 1100px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
 }
 
 /* H1 title styling for info pages */
 .info-page h1 {
+  font-family: inherit !important;
   font-size: 36px !important;
-  font-weight: 800;
+  font-weight: 800 !important;
   color: #0f172a;
   margin-bottom: 16px;
   margin-top: 0;
@@ -108,11 +125,44 @@ body .ui.large.menu {
 
 /* H2 subtitle styling for info pages */
 .info-page h2 {
+  font-family: inherit !important;
   font-size: 22px !important;
-  font-weight: 800;
+  font-weight: 700 !important;
   color: #1565c0;
   margin-bottom: 8px;
   margin-top: 18px;
+}
+
+/* FAQ / info page question headings */
+.info-page h3,
+.info-page .ui.segment h3 {
+  font-family: inherit !important;
+  font-size: 17px !important;
+  font-weight: 600 !important;
+  color: #0f172a !important;
+  letter-spacing: 0.01em !important;
+  margin-bottom: 6px !important;
+  margin-top: 0 !important;
+}
+
+/* FAQ / info page body text */
+.info-page p,
+.info-page .ui.segment p {
+  font-family: inherit !important;
+  font-size: 15px !important;
+  font-weight: 400 !important;
+  line-height: 1.65 !important;
+  color: #374151 !important;
+  margin-bottom: 0 !important;
+}
+
+.info-page a {
+  color: #1565c0;
+  text-decoration: underline;
+  word-break: break-all;
+}
+.info-page a:hover {
+  color: #0d47a1;
 }
 
 /* Study design content styling */

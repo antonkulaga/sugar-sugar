@@ -11,6 +11,7 @@ ro:
     the_study: "Studiul"
     contact_us: "Contact"
     video_instructions: "Instrucțiuni video"
+    faq: "Întrebări frecvente"
 
   language:
     choose: "Limbă"
@@ -18,6 +19,10 @@ ro:
     de: "Germană"
     uk: "Ucraineană"
     ro: "Română"
+    ru: "Rusă"
+    zh: "Chineză"
+    ru: "Rusă"
+    zh: "Chineză"
 
   landing:
     patient_consent_form_title: "Formular de consimțământ (participant)"
@@ -27,7 +32,7 @@ ro:
     tagline: "Un joc care îți testează superputerile de a prezice glucoza."
     how_it_works: "Cum funcționează"
     how_it_works_steps:
-      - "Încarcă un CSV Dexcom/Libre/Medtronic (sau folosește setul de date exemplu)"
+      - "Încarcă un CSV Dexcom/Libre/Medtronic/Nightscout (sau folosește setul de date exemplu)"
       - "Desenează pe grafic tendința estimată a glucozei"
       - "Compară predicțiile cu valorile reale"
       - "Vezi metrici de acuratețe (MAE/RMSE/MAPE)"
@@ -147,7 +152,7 @@ ro:
     upload_required: "Este necesară încărcarea"
     upload_success: "Datele din %{filename} au fost încărcate cu succes. Aceste date vor fi folosite pentru predicții."
     example_data_now_using: "Acum se folosesc date exemplu. Încarcă un fișier CSV pentru o analiză personalizată."
-    example_data_warning: "În prezent se folosesc date exemplu. Încarcă propriul CSV Dexcom/Libre/Medtronic pentru o analiză personalizată."
+    example_data_warning: "În prezent se folosesc date exemplu. Încarcă propriul CSV Dexcom/Libre/Medtronic/Nightscout pentru o analiză personalizată."
     current_data_source: "Sursa curentă de date:"
     weight_label: "Greutate"
     description_1: "Testează-ți abilitățile de predicție a glucozei!"
@@ -250,4 +255,56 @@ ro:
     line1: "Aceste rezultate sunt exclusiv în scop de cercetare"
     line2: "Indiferent de rezultate, nu schimba nicio decizie medicală pe baza acestei aplicații"
     line3: "Urmează întotdeauna recomandările furnizorului tău de servicii medicale"
+
+  faq:
+    title: "Întrebări frecvente"
+    sections:
+      - title: "De ce contează acest studiu"
+        items:
+          - q: "Ce este Sugar Sugar?"
+            a: "Sugar Sugar este o aplicație web de cercetare construită cu Dash. Transformă prognozarea glucozei într-un joc interactiv: vezi o parte dintr-o curbă CGM, desenezi cum crezi că va continua, apoi compari predicția cu valorile reale. Scopul este să măsurăm cât de precis pot oamenii să anticipeze dinamica pe termen scurt a glucozei."
+          - q: "Este acesta un studiu de cercetare real?"
+            a: "Da. Sugar Sugar face parte dintr-un efort de cercetare real. Studiul a primit avizul comitetului de etică al University Medicine Rostock (Universitätsmedizin Rostock) din Germania — menționăm acest lucru ca parte a contextului studiului, pentru ca tu să știi că cercetarea este condusă responsabil."
+          - q: "De ce contează prognozarea glucozei pentru persoanele cu diabet?"
+            a: "Pentru persoanele cu diabet, prognozele precise pe termen scurt ale glucozei pot sprijini decizii zilnice mai sigure privind insulina, carbohidrații, exercițiile și momentul administrării. O predicție mai bună poate ajuta la reducerea valorilor periculoase și la gestionarea mai puțin stresantă a glucozei."
+          - q: "De ce contează prognozarea glucozei pentru persoanele fără diabet?"
+            a: "Glucoza este un semnal metabolic central legat de energie, cogniție, dispoziție, răspuns la exerciții și sănătate pe termen lung. Pentru persoanele fără diabet, predicția poate arăta cum alimentele, somnul, stresul și activitatea modelează metabolismul în timp real — util pentru sănătatea preventivă și optimizarea stilului de viață."
+          - q: "De ce este precizia umană atât de importantă pentru învățarea automată?"
+            a: "În prezent nu există niciun benchmark publicat al preciziei umane pentru prognozarea glucozei CGM. Fără să știm cât de bine poate un om informat să prezică tendințele glucozei, nu putem evalua dacă vreun model AI este cu adevărat util — ar putea fi mai slab decât un diabetic experimentat, sau mai bun doar în scenarii specifice. Acest studiu stabilește acel benchmark pentru ca viitoarele modele AI să poată fi comparate cu sens."
+      - title: "Cum funcționează studiul"
+        items:
+          - q: "Cine poate participa?"
+            a: "Oricine are 18+ ani. Utilizatorii de CGM sunt deosebit de valoroși, dar și persoanele fără CGM pot juca cu date generice."
+          - q: "Ce dispozitive și formate CGM sunt acceptate?"
+            a: "Sunt acceptate exporturile Dexcom, Libre, Medtronic și Nightscout. Un set de date exemplu generic este de asemenea disponibil dacă nu ai un dispozitiv CGM."
+          - q: "Cât timp durează?"
+            a: "Fiecare rundă durează aproximativ 2–3 minute. O sesiune completă (12 runde) durează aproximativ 30 de minute, dar o poți împărți în mai multe vizite."
+          - q: "Pot să mă opresc la jumătate și să reiau mai târziu?"
+            a: "Da. Jocul îți salvează progresul local în browser. Dacă 12 runde par prea multe într-o singură sesiune, închide tab-ul și revino — ți se va oferi posibilitatea de a continua de unde ai rămas. Chiar și câteva runde sunt utile, dar fiecare rundă suplimentară îmbunătățește calitatea datelor."
+          - q: "Ce fac dacă nu îmi plac rezultatele? Ar trebui să reîncep?"
+            a: "Te rugăm să nu reîncepi doar pentru că nu ești mulțumit de precizia ta. Oamenii tind natural să păstreze scorurile bune și să le respingă pe cele proaste — dar asta ar distorsiona studiul și ar face rezultatele mai puțin valide din punct de vedere științific. Dacă ești dezamăgit, cel mai bine este să continui cu o altă rundă, nu să îți resetezi progresul."
+          - q: "Care sunt metricele de acuratețe?"
+            a: "Folosim metrici standard de prognoză — MAE, RMSE și MAPE — pentru a cuantifica cât de apropiată a fost curba ta de glucoză față de cea reală. MAE este eroarea absolută medie: îți spune cu cât ai greșit în medie. RMSE penalizează mai mult greșelile mari, evidențiind cazurile în care predicția a fost serios greșită. MAPE exprimă eroarea ca procent, ceea ce ajută la compararea performanței în diferite intervale de glucoză. Împreună, aceste metrici oferă o imagine mai completă decât un singur scor."
+      - title: "Date și confidențialitate"
+        items:
+          - q: "Sunt stocate datele mele?"
+            a: "Până când alegi să trimiți, totul rămâne în propriul tău browser. Nimic nu este trimis la serverele noastre decât dacă îți dai consimțământul activ și trimiți rezultate. Dacă selectezi \"Vreau doar să joc\", nicio dată nu va părăsi dispozitivul tău."
+          - q: "Ce date sunt colectate dacă îmi dau consimțământul?"
+            a: "Date de joc (predicții desenate, metrici de acuratețe), opțional fișierul tău CGM încărcat și un scurt chestionar (vârstă, experiență CGM, status diabet etc.)."
+          - q: "Sunt partajate datele mele CGM cu terțe părți?"
+            a: "Nu. Datele sunt folosite exclusiv pentru acest studiu și nu sunt vândute sau partajate cu părți neautorizate."
+          - q: "Mă pot retrage?"
+            a: "Da, oricând, închizând browserul. Pentru a șterge datele deja trimise, te rugăm să contactezi echipa studiului."
+          - q: "Ce îi împiedică pe participanți să falsifice rezultatele?"
+            a: "Sincer? Nimic tehnic. Deoarece toate datele sunt stocate local în propriul tău browser, ne bazăm în întregime pe onestitatea și buna-credință a participanților — și chiar avem încredere în tine. Dacă totuși vrei să-ți impresionezi prietenii cu un scor suspicos de perfect, te rugăm să faci un screenshot și să-l editezi într-un editor de imagini, sau folosește DevTools-ul browserului pentru a modifica numerele afișate. Te rugăm să nu trimiți date false la studiu — aceasta afectează direct validitatea științifică a cercetării de care beneficiază toată lumea."
+      - title: "Ajutor și contribuții"
+        items:
+          - q: "Ce fac dacă am găsit o eroare?"
+            a: "Te rugăm să deschizi un issue pe GitHub-ul proiectului la adresa [github.com/GlucoseDAO/sugar-sugar](https://github.com/GlucoseDAO/sugar-sugar). Rapoartele de erori sunt foarte utile pentru îmbunătățirea aplicației și pentru identificarea oricărui lucru care ar putea afecta experiența studiului sau calitatea datelor."
+          - q: "Sunt dezvoltator software. Pot contribui cu o funcționalitate?"
+            a: "Da, contribuțiile sunt binevenite prin GitHub-ul proiectului la adresa [github.com/GlucoseDAO/sugar-sugar](https://github.com/GlucoseDAO/sugar-sugar). Suntem deosebit de deschiși la corecturi, îmbunătățiri UI, suport pentru mai mulți senzori sau formate de fișiere și alte modificări care îmbunătățesc utilizabilitatea fără a schimba protocolul științific. Deoarece acesta este un studiu activ, modificările care afectează designul studiului ar trebui discutate mai întâi cu echipa."
+          - q: "Cum altfel pot ajuta studiul?"
+            a: "Chiar dacă nu ești dezvoltator software, poți contribui mult. Distribuie studiul în comunități relevante, informează alți utilizatori CGM sau persoane interesate, raportează formulări neclare sau probleme de utilizabilitate și contactează echipa studiului prin canalele de contact ale proiectului dacă dorești să colaborezi în orice mod."
+          - q: "Unde pot găsi designul complet al studiului?"
+            a: "Pe pagina \"Studiul\" din bara de navigare, care include un PDF pentru descărcare și un link către depozitul GitHub."
 

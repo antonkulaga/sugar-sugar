@@ -11,6 +11,7 @@ de:
     the_study: "Die Studie"
     contact_us: "Kontakt"
     video_instructions: "Videoanleitungen"
+    faq: "FAQ"
 
   language:
     choose: "Sprache"
@@ -18,6 +19,10 @@ de:
     de: "Deutsch"
     uk: "Ukrainisch"
     ro: "Rumänisch"
+    ru: "Russisch"
+    zh: "Chinesisch"
+    ru: "Russisch"
+    zh: "Chinesisch"
 
   landing:
     patient_consent_form_title: "Patienten-Einwilligungsformular"
@@ -27,7 +32,7 @@ de:
     tagline: "Ein Spiel, um deine Fähigkeiten zur Glukose‑Vorhersage zu testen."
     how_it_works: "So funktioniert es"
     how_it_works_steps:
-      - "Dexcom/Libre/Medtronic‑CSV hochladen (oder Beispieldaten verwenden)"
+      - "Dexcom/Libre/Medtronic/Nightscout‑CSV hochladen (oder Beispieldaten verwenden)"
       - "Deinen erwarteten Glukose‑Verlauf im Chart einzeichnen"
       - "Vorhersagen mit den echten Werten vergleichen"
       - "Genauigkeitsmetriken ansehen (MAE/RMSE/MAPE)"
@@ -147,7 +152,7 @@ de:
     upload_required: "Upload erforderlich"
     upload_success: "Daten aus %{filename} wurden erfolgreich geladen. Diese Daten werden für Vorhersagen verwendet."
     example_data_now_using: "Jetzt werden Beispieldaten verwendet. Lade eine CSV‑Datei für eine personalisierte Analyse hoch."
-    example_data_warning: "Aktuell werden Beispieldaten verwendet. Lade deine eigene Dexcom/Libre/Medtronic‑CSV für eine personalisierte Analyse hoch."
+    example_data_warning: "Aktuell werden Beispieldaten verwendet. Lade deine eigene Dexcom/Libre/Medtronic/Nightscout‑CSV für eine personalisierte Analyse hoch."
     current_data_source: "Aktuelle Datenquelle:"
     weight_label: "Gewicht"
     description_1: "Teste deine Glukose‑Vorhersage!"
@@ -250,4 +255,56 @@ de:
     line1: "Diese Ergebnisse dienen ausschließlich Forschungszwecken"
     line2: "Unabhängig von deinen Ergebnissen, ändere keine medizinischen Entscheidungen aufgrund dieser App"
     line3: "Folge immer den Empfehlungen deines Behandlungsteams"
+
+  faq:
+    title: "Häufig gestellte Fragen"
+    sections:
+      - title: "Warum diese Studie wichtig ist"
+        items:
+          - q: "Was ist Sugar Sugar?"
+            a: "Sugar Sugar ist eine webbasierte Forschungs-App, die mit Dash entwickelt wurde. Sie verwandelt Glukoseprognosen in ein interaktives Spiel: Du siehst einen Teil einer CGM-Kurve, zeichnest ein, wie du glaubst, dass sie weitergeht, und vergleichst dann deine Vorhersage mit den realen Werten. Ziel ist es, zu messen, wie genau Menschen kurzfristige Glukosedynamiken antizipieren können."
+          - q: "Ist das eine echte Forschungsstudie?"
+            a: "Ja. Sugar Sugar ist Teil einer echten Forschungsarbeit. Die Studie erhielt die Genehmigung der Ethikkommission der Universitätsmedizin Rostock in Deutschland — wir erwähnen dies als Teil des Studienhintergrunds, damit du weißt, dass die Forschung verantwortungsbewusst durchgeführt wird."
+          - q: "Warum ist Glukoseprognose für Menschen mit Diabetes wichtig?"
+            a: "Für Menschen mit Diabetes können genaue kurzfristige Glukosevorhersagen sicherere alltägliche Entscheidungen über Insulin, Kohlenhydrate, Bewegung und Timing unterstützen. Bessere Vorhersagen helfen, gefährliche Hoch- und Tiefphasen zu reduzieren und das Glukosemanagement weniger stressig zu gestalten."
+          - q: "Warum ist Glukoseprognose für Menschen ohne Diabetes wichtig?"
+            a: "Glukose ist ein zentrales Stoffwechselsignal, das mit Energie, Kognition, Stimmung, Bewegungsreaktionen und langfristiger Gesundheit verbunden ist. Für Menschen ohne Diabetes kann die Prognose zeigen, wie Ernährung, Schlaf, Stress und Aktivität den Stoffwechsel in Echtzeit beeinflussen — nützlich für Prävention und Lebensstiloptimierung."
+          - q: "Warum ist die menschliche Genauigkeit so wichtig für maschinelles Lernen?"
+            a: "Es gibt derzeit keinen veröffentlichten menschlichen Referenzwert für CGM-Glukosevorhersagen. Ohne zu wissen, wie gut ein informierter Mensch Glukosetrends vorhersagen kann, lässt sich nicht beurteilen, ob ein KI-Modell wirklich nützlich ist — es könnte schlechter sein als ein erfahrener Diabetiker oder nur in bestimmten Szenarien besser. Diese Studie legt diesen Referenzwert fest, damit künftige KI-Modelle sinnvoll verglichen werden können."
+      - title: "Wie die Studie funktioniert"
+        items:
+          - q: "Wer kann teilnehmen?"
+            a: "Alle ab 18 Jahren. CGM-Nutzende sind besonders wertvoll, aber auch Personen ohne CGM können mit generischen Daten spielen."
+          - q: "Welche CGM-Geräte und Formate werden unterstützt?"
+            a: "Dexcom, Libre, Medtronic und Nightscout-Exporte werden unterstützt. Ein generischer Beispieldatensatz ist ebenfalls verfügbar, wenn du kein CGM-Gerät hast."
+          - q: "Wie lange dauert es?"
+            a: "Jede Runde dauert etwa 2–3 Minuten. Eine vollständige Sitzung (12 Runden) beträgt ca. 30 Minuten, kann aber auf mehrere Besuche aufgeteilt werden."
+          - q: "Kann ich zwischendrin aufhören und später weitermachen?"
+            a: "Ja. Das Spiel speichert deinen Fortschritt lokal im Browser. Wenn 12 Runden in einer Sitzung zu viel erscheinen, schließe den Tab und komme wieder — du wirst angeboten, dort weiterzumachen, wo du aufgehört hast. Bereits wenige Runden sind wertvoll, aber jede weitere Runde verbessert die Datenqualität."
+          - q: "Was, wenn mir meine Ergebnisse nicht gefallen? Soll ich neu starten?"
+            a: "Bitte starte nicht neu, nur weil du mit deiner Genauigkeit unzufrieden bist. Menschen neigen natürlich dazu, gute Ergebnisse zu behalten und schlechte zu verwerfen — das würde die Studie aber verzerren und die Ergebnisse wissenschaftlich weniger valide machen. Am besten ist es, mit einer weiteren Runde fortzufahren."
+          - q: "Was sind die Genauigkeitsmetriken?"
+            a: "Wir verwenden Standardmetriken — MAE, RMSE und MAPE — um zu messen, wie nah deine Glukosekurve an der echten lag. MAE ist der durchschnittliche absolute Fehler. RMSE bestraft größere Fehler stärker und hebt Fälle hervor, wo die Vorhersage stark falsch war. MAPE drückt den Fehler als Prozentsatz aus, was Vergleiche über verschiedene Glukosebereiche erleichtert. Zusammen geben diese Metriken ein vollständigeres Bild als eine einzelne Kennzahl."
+      - title: "Daten und Datenschutz"
+        items:
+          - q: "Werden meine Daten gespeichert?"
+            a: "Bis du dich entscheidest zu senden, bleibt alles in deinem eigenen Browser. Nichts wird an unsere Server gesendet, es sei denn, du stimmst aktiv zu und sendest Ergebnisse. Wenn du \"Ich möchte nur spielen\" auswählst, verlassen keine Daten dein Gerät."
+          - q: "Welche Daten werden bei Zustimmung gesammelt?"
+            a: "Spieldaten (eingezeichnete Vorhersagen, Genauigkeitsmetriken), optional deine hochgeladene CGM-Datei und ein kurzer Fragebogen (Alter, CGM-Erfahrung, Diabetesstatus usw.)."
+          - q: "Werden meine CGM-Daten an Dritte weitergegeben?"
+            a: "Nein. Die Daten werden ausschließlich für diese Studie verwendet und niemals verkauft oder an unbefugte Parteien weitergegeben."
+          - q: "Kann ich meine Teilnahme widerrufen?"
+            a: "Ja, jederzeit, indem du den Browser schließt. Um bereits gesendete Daten löschen zu lassen, kontaktiere bitte das Studienteam."
+          - q: "Was hindert jemanden daran, seine Ergebnisse zu fälschen?"
+            a: "Ehrlich gesagt? Nichts Technisches. Da alle Daten im lokalen Browserspeicher liegen, vertrauen wir auf die Ehrlichkeit und den guten Willen unserer Teilnehmenden — und wir vertrauen dir wirklich. Falls du deinen Freunden aber mit einem verdächtig perfekten Score imponieren möchtest: Bitte mach einfach einen Screenshot und bearbeite ihn in einem Bildbearbeitungsprogramm, oder nutze die Browser-DevTools, um die angezeigten Zahlen zu ändern. Bitte sende keine gefälschten Daten an die Studie — das schadet direkt der wissenschaftlichen Aussagekraft der Forschung, von der alle profitieren."
+      - title: "Hilfe und Mitwirken"
+        items:
+          - q: "Was, wenn ich einen Fehler gefunden habe?"
+            a: "Bitte öffne ein Issue auf dem Projekt-GitHub unter [github.com/GlucoseDAO/sugar-sugar](https://github.com/GlucoseDAO/sugar-sugar). Fehlerberichte helfen sehr, die App zu verbessern und alles zu identifizieren, was die Studienerfahrung oder Datenqualität beeinflussen könnte."
+          - q: "Ich bin Softwareentwickler:in. Kann ich eine Funktion beitragen?"
+            a: "Ja, Beiträge sind über das Projekt-GitHub unter [github.com/GlucoseDAO/sugar-sugar](https://github.com/GlucoseDAO/sugar-sugar) willkommen. Wir begrüßen besonders Fehlerkorrekturen, UI-Verbesserungen, Unterstützung für mehr Sensoren oder Dateiformate und andere Änderungen, die die Benutzerfreundlichkeit verbessern, ohne das wissenschaftliche Protokoll zu verändern. Da dies eine laufende Studie ist, sollten Änderungen, die das Studiendesign mitten in der Laufzeit verändern, vorher mit dem Team besprochen werden."
+          - q: "Wie kann ich die Studie sonst unterstützen?"
+            a: "Auch wenn du kein/e Softwareentwickler:in bist, kannst du viel helfen. Teile die Studie mit relevanten Communitys, weise andere CGM-Nutzende oder interessierte Personen darauf hin, melde unklare Formulierungen oder Usability-Probleme und kontaktiere das Studienteam über die Projektkontaktkanäle, wenn du mitarbeiten möchtest."
+          - q: "Wo finde ich das vollständige Studiendesign?"
+            a: "Auf der Seite \"Die Studie\" in der Navigationsleiste, die einen PDF-Download und einen Link zum GitHub-Repository enthält."
 
